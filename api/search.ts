@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // Vercel serverless function — live web search via Tavily, key kept server-side.
 // The browser POSTs { query }; the TAVILY_API_KEY never reaches the client.
 // Set TAVILY_API_KEY in the server env.

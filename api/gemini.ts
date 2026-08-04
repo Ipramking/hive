@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // Vercel serverless function — keeps the Gemini key server-side.
 // The browser POSTs { prompt } here; the key never reaches the client.
 // Set GEMINI_API_KEY (server env) and build the client with VITE_PROXY=1.
