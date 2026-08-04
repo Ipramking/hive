@@ -3,17 +3,31 @@ import type { StageInput, StageResult } from './types'
 
 export const GEMINI_MODEL = 'gemini-flash-latest'
 
+export interface PromptOpts {
+  /** ask the model to use Google Search grounding (only when we have no web results to inject) */
+  webAccess?: boolean
+  /** real web-search results (from Tavily) to inject as ground truth */
+  webContext?: string
+}
+
+/** A focused search query for a stage. */
+export function queryFor({ task, stage }: StageInput): string {
+  return `${task} — ${stage.title}`.trim().slice(0, 380)
+}
+
 /** Build the per-stage prompt sent to the model. Shared by direct + proxy engines. */
 export function buildPrompt(
   { task, mode, stage, agent, priorArtifacts }: StageInput,
-  webAccess = false,
+  opts: PromptOpts = {},
 ): string {
   const prior = priorArtifacts.length
     ? priorArtifacts.map((a) => `### ${a.title}\n${a.body}`).join('\n\n')
     : '(none yet — you are the first step)'
-  const web = webAccess
-    ? `\nYou have LIVE WEB ACCESS. Use Google Search to ground your work in current, real facts — recent figures, real companies, real dates, today's context. Never invent statistics; if you cite a number, it should come from a real source.\n`
-    : ''
+  const web = opts.webContext
+    ? `\nLIVE WEB RESULTS (fresh from a real web search — treat these as ground truth, stay current, and cite the ones you use):\n${opts.webContext}\n`
+    : opts.webAccess
+      ? `\nYou have LIVE WEB ACCESS. Use Google Search to ground your work in current, real facts — recent figures, real companies, real dates, today's context. Never invent statistics; if you cite a number, it should come from a real source.\n`
+      : ''
   return `You are ${agent.name}, the ${agent.role} in an organisation of AI coworkers.
 The org is running in "${mode.name}" mode: ${mode.tagline}
 Your teammates: ${mode.agents.map((a) => `${a.name} (${a.role})`).join(', ')}.
@@ -38,16 +52,19 @@ Stay in character as ${agent.name}. Be specific to the actual task, not generic.
 
 /**
  * Build the Gemini generateContent request body.
- * With web access we enable Google Search grounding — which is incompatible with
- * forced JSON output, so we drop responseMimeType and parse the JSON out of the prose.
+ * We only enable Google Search grounding when web access is on AND we have no
+ * injected web results — grounding is incompatible with forced JSON output, so
+ * in that case we drop responseMimeType and parse the JSON out of the prose.
+ * With injected results (or no web at all) we keep clean JSON output.
  */
-export function buildRequestBody(input: StageInput, webAccess: boolean) {
+export function buildRequestBody(input: StageInput, opts: PromptOpts = {}) {
+  const grounding = !!opts.webAccess && !opts.webContext
   return {
-    contents: [{ role: 'user', parts: [{ text: buildPrompt(input, webAccess) }] }],
-    generationConfig: webAccess
+    contents: [{ role: 'user', parts: [{ text: buildPrompt(input, opts) }] }],
+    generationConfig: grounding
       ? { temperature: 0.9 }
       : { temperature: 0.9, responseMimeType: 'application/json' },
-    ...(webAccess ? { tools: [{ google_search: {} }] } : {}),
+    ...(grounding ? { tools: [{ google_search: {} }] } : {}),
   }
 }
 
