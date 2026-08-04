@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1100px 700px at 82% -12%, rgba(109, 124, 255, 0.08), transparent 60%),
+    radial-gradient(900px 600px at -5% 108%, rgba(255, 122, 69, 0.05), transparent 55%),
+    #0c0d13;
+  color: #ece8de;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(236, 232, 222, 0.1);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 232, 222, 0.2);
+}
+
+/* paper deliverables get their own scrollbar treatment */
+.paper ::-webkit-scrollbar-thumb {
+  background: rgba(38, 34, 27, 0.2);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent, #6d7cff);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-ink-850/70 backdrop-blur-sm;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-medium;
+  }
+  /* mono uppercase micro-label — the "machine" voice */
+  .eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-white/40;
+  }
+  /* warm printout surface for finished deliverables */
+  .paper {
+    background:
+      linear-gradient(#f2ede1, #f2ede1) padding-box,
+      repeating-linear-gradient(180deg, transparent 0 27px, rgba(38, 34, 27, 0.05) 27px 28px);
+    color: #26221b;
+  }
+}
