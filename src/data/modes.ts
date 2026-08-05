@@ -177,7 +177,7 @@ export const autoMode: ModeConfig = {
   id: 'auto',
   name: 'Auto',
   emoji: '✨',
-  accent: '#6d7cff',
+  accent: '#22c55e',
   tagline: 'Type a task — the hive assembles the right team for it.',
   builtIn: true,
   agents: [],
