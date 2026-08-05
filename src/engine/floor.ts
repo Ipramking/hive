@@ -1,4 +1,4 @@
-import type { Agent, ModeConfig } from '../types'
+import type { Agent, ModeConfig, Stance } from '../types'
 
 // ---- Manager (dispatcher) ----
 
@@ -17,15 +17,18 @@ export function buildManagerPrompt(opts: {
   boardTitles: string[]
   hasIntel: boolean
   maxActivate: number
+  humanSteer?: string
+  debate?: boolean
+  culture?: string
 }): string {
-  const { mode, task, round, maxRounds, transcript, boardTitles, hasIntel, maxActivate } = opts
+  const { mode, task, round, maxRounds, transcript, boardTitles, hasIntel, maxActivate, humanSteer, debate, culture } = opts
   const roster = mode.agents
     .map((a) => `- ${a.id}: ${a.name}, ${a.role}${a.tag ? ` [${a.tag}]` : ''} — ${a.blurb}`)
     .join('\n')
   return `You are the team lead running a live working session for the "${mode.name}" org.
 Goal (${mode.tagline}). The room is working on this task:
 """${task}"""
-
+${culture ? `Team culture: ${culture}\n` : ''}${humanSteer ? `\n⚡ THE HUMAN JUST STEERED THE ROOM: "${humanSteer}" — make this round reflect it.\n` : ''}
 Your coworkers:
 ${roster}
 
@@ -34,12 +37,11 @@ ${hasIntel ? 'Live web intel has been shared in the room.\n' : ''}Deliverables p
 Recent room activity:
 ${transcript || '(the session just started)'}
 
-This is round ${round} of at most ${maxRounds}. Decide who should work THIS round and what each should do.
-Activate 1 to ${maxActivate} coworkers who can make progress in parallel right now. Give each a specific, short instruction that builds on what teammates have already said. Set done=true only when the task is genuinely handled and the key deliverables exist.
+This is round ${round} of at most ${maxRounds}. Put ${maxActivate} coworkers to work IN PARALLEL this round — give each a specific instruction that builds on the discussion.${debate ? ' If teammates disagree in the transcript, name the disagreement in your note and push the room to a clear decision this round.' : ''} Set done=true only when the task is genuinely handled and the key deliverables exist.
 
 Respond with ONLY JSON:
 {
-  "note": "one short line you say to the room to kick off this round",
+  "note": "one short line you say to the room (call out decisions or open disagreements)",
   "done": false,
   "activate": [ { "agentId": "<id from the roster>", "instruction": "<specific thing to do now>" } ]
 }`
@@ -72,6 +74,7 @@ export interface Delivered {
 export interface AgentTurn {
   say: string
   to: string | null
+  stance: Stance | null
   deliver: Delivered | null
 }
 
@@ -82,18 +85,21 @@ export function buildAgentPrompt(opts: {
   instruction: string
   transcript: string
   intel: string
+  debate?: boolean
+  culture?: string
+  humanSteer?: string
 }): string {
-  const { mode, agent, task, instruction, transcript, intel } = opts
+  const { mode, agent, task, instruction, transcript, intel, debate, culture, humanSteer } = opts
   const teammates = mode.agents
     .filter((a) => a.id !== agent.id)
     .map((a) => `${a.name} (${a.role}, id:${a.id})`)
     .join(', ')
   return `You are ${agent.name}, the ${agent.role}${agent.tag ? ` on the ${agent.tag} team` : ''} in the "${mode.name}" org.
 Your style: ${agent.blurb} You are good at: ${agent.skills.join(', ')}.
-You are one coworker among several working the same task IN THE SAME ROOM, in real time. Talk like a real colleague — natural, first person, concise. React to what teammates just said, build on it, and when you hand something to a specific person, address them by name.
+${culture ? `Team culture: ${culture}\n` : ''}You are one coworker among several working the same task IN THE SAME ROOM, in real time — everyone is talking at once. Talk like a real colleague: natural, first person, concise. React to what teammates JUST said by name.${debate ? ' You have real opinions: AGREE, CHALLENGE (push back with a reason), or BUILD ON a teammate — don\'t just echo. If you disagree, say so plainly, then move toward a decision.' : ''}
 
 Teammates: ${teammates}.
-
+${humanSteer ? `\n⚡ The human in the room just said: "${humanSteer}" — take it as direction.\n` : ''}
 The task the room is working on:
 """${task}"""
 ${intel ? `\nShared live web intel:\n${intel}\n` : ''}
@@ -111,6 +117,7 @@ Reply with ONLY JSON:
 {
   "say": "what you say out loud to the room (1-3 sentences, natural, may @mention a teammate by name)",
   "to": "<teammate id you are handing to / addressing, or null>",
+  "stance": "agree | challenge | build | ask | null (how your message relates to the discussion)",
   "deliver": {
     "kind": "code" | "doc",
     "title": "short deliverable name",
@@ -142,9 +149,12 @@ export function parseAgentTurn(obj: any, mode: ModeConfig): AgentTurn {
       }
     }
   }
+  const stances: Stance[] = ['agree', 'challenge', 'build', 'ask']
+  const stance = stances.includes(obj?.stance) ? (obj.stance as Stance) : null
   return {
     say: typeof obj?.say === 'string' && obj.say.trim() ? obj.say.trim() : 'On it.',
     to,
+    stance,
     deliver,
   }
 }

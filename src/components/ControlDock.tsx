@@ -1,4 +1,5 @@
-import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu } from 'lucide-react'
+import { useState } from 'react'
+import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useHive } from '../store'
 import { Feed } from './Feed'
@@ -142,6 +143,41 @@ export function ControlDock() {
       <div className="flex min-h-0 flex-1 flex-col p-3">
         <Feed />
       </div>
+
+      <ChatInput accent={accent} />
     </section>
+  )
+}
+
+function ChatInput({ accent }: { accent: string }) {
+  const postUser = useHive((s) => s.postUser)
+  const running = useHive((s) => s.runStatus === 'running')
+  const [draft, setDraft] = useState('')
+  const send = () => {
+    if (!draft.trim()) return
+    postUser(draft)
+    setDraft('')
+  }
+  return (
+    <div className="border-t border-line p-2.5">
+      <div className="flex items-center gap-2 rounded-xl border border-line bg-ink-900/70 px-3 focus-within:border-white/25">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+          placeholder={running ? 'Say something to the room…' : 'Start a run, then chat to steer it'}
+          className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-white/90 outline-none placeholder:text-white/30"
+        />
+        <button
+          onClick={send}
+          disabled={!draft.trim()}
+          title="Send to the room"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors disabled:opacity-30"
+          style={{ color: accent }}
+        >
+          <SendHorizonal size={16} />
+        </button>
+      </div>
+    </div>
   )
 }

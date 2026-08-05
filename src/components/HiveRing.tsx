@@ -24,15 +24,16 @@ export function HiveRing() {
   const pos = useMemo(() => agents.map((_, i) => nodePos(i, n)), [n, agents])
   const idx = useMemo(() => Object.fromEntries(agents.map((a, i) => [a.id, i])), [agents])
 
-  // most recent hand-off (agent message addressed "to" someone) drives a travelling pulse
-  const handoff = useMemo(() => {
-    for (let i = feed.length - 1; i >= 0; i--) {
+  // recent hand-offs (agent messages addressed "to" someone) drive travelling pulses
+  const handoffs = useMemo(() => {
+    const out: { id: string; from: number; to: number }[] = []
+    for (let i = feed.length - 1; i >= 0 && out.length < 4; i--) {
       const m = feed[i]
       if (m.kind === 'agent' && m.agentId && m.to && idx[m.agentId] != null && idx[m.to] != null) {
-        return { id: m.id, from: idx[m.agentId], to: idx[m.to] }
+        out.push({ id: m.id, from: idx[m.agentId], to: idx[m.to] })
       }
     }
-    return null
+    return out
   }, [feed, idx])
 
   const activeCount = Object.values(agentStatus).filter((s) => s === 'thinking' || s === 'working').length
@@ -69,31 +70,33 @@ export function HiveRing() {
               const q = pos[(i + 1) % n]
               return <line key={`ring-${i}`} x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="rgba(236,232,222,0.10)" strokeWidth={0.2} />
             })}
-            {/* live hand-off chord + travelling light */}
+            {/* live hand-off chords + travelling lights (several at once) */}
             <AnimatePresence>
-              {handoff && (
-                <motion.g key={handoff.id}>
+              {handoffs.map((h, k) => (
+                <motion.g key={h.id} initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <motion.line
-                    x1={pos[handoff.from].x}
-                    y1={pos[handoff.from].y}
-                    x2={pos[handoff.to].x}
-                    y2={pos[handoff.to].y}
-                    stroke={agents[handoff.to].color}
-                    strokeWidth={0.5}
-                    initial={{ pathLength: 0, opacity: 0.9 }}
-                    animate={{ pathLength: 1, opacity: [0.9, 0.25] }}
+                    x1={pos[h.from].x}
+                    y1={pos[h.from].y}
+                    x2={pos[h.to].x}
+                    y2={pos[h.to].y}
+                    stroke={agents[h.to].color}
+                    strokeWidth={0.45}
+                    initial={{ pathLength: 0, opacity: 0.85 }}
+                    animate={{ pathLength: 1, opacity: k === 0 ? [0.85, 0.3] : 0.16 }}
                     transition={{ duration: 1 }}
                   />
-                  <motion.circle
-                    r={1.4}
-                    fill={agents[handoff.to].color}
-                    initial={{ cx: pos[handoff.from].x, cy: pos[handoff.from].y, opacity: 1 }}
-                    animate={{ cx: pos[handoff.to].x, cy: pos[handoff.to].y, opacity: [1, 1, 0] }}
-                    transition={{ duration: 1, ease: 'easeInOut' }}
-                    style={{ filter: `drop-shadow(0 0 2px ${agents[handoff.to].color})` }}
-                  />
+                  {k === 0 && (
+                    <motion.circle
+                      r={1.5}
+                      fill={agents[h.to].color}
+                      initial={{ cx: pos[h.from].x, cy: pos[h.from].y, opacity: 1 }}
+                      animate={{ cx: pos[h.to].x, cy: pos[h.to].y, opacity: [1, 1, 0] }}
+                      transition={{ duration: 1, ease: 'easeInOut' }}
+                      style={{ filter: `drop-shadow(0 0 2px ${agents[h.to].color})` }}
+                    />
+                  )}
                 </motion.g>
-              )}
+              ))}
             </AnimatePresence>
           </svg>
 
@@ -127,7 +130,12 @@ export function HiveRing() {
                 style={{ left: `${pos[i].x}%`, top: `${pos[i].y}%` }}
                 title={`${a.name} · ${a.role}`}
               >
-                <Cell agent={a} active={active} done={done} selected={selected === a.id} accent={mode.accent} />
+                <motion.div
+                  animate={{ y: [0, -4, 0, 3, 0], x: [0, 2, 0, -2, 0] }}
+                  transition={{ duration: 5 + (i % 4), repeat: Infinity, ease: 'easeInOut', delay: i * 0.35 }}
+                >
+                  <Cell agent={a} active={active} done={done} selected={selected === a.id} accent={mode.accent} />
+                </motion.div>
               </button>
             )
           })}

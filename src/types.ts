@@ -38,7 +38,10 @@ export interface ModeConfig {
   stages: Stage[]
 }
 
-export type MessageKind = 'system' | 'agent' | 'handoff' | 'artifact' | 'manager'
+export type MessageKind = 'system' | 'agent' | 'handoff' | 'artifact' | 'manager' | 'user'
+
+/** how a coworker's message relates to the room's discussion */
+export type Stance = 'agree' | 'challenge' | 'build' | 'ask'
 
 export interface FeedMessage {
   id: string
@@ -49,6 +52,20 @@ export interface FeedMessage {
   ts: number
   /** agent id this message is directed at — used to render "passing to" cross-talk */
   to?: string
+  /** debate posture for agent messages */
+  stance?: Stance
+}
+
+/** How the organisation works — tunable without slowing the room down. */
+export interface OrgSettings {
+  /** how many coworkers work at once each round */
+  concurrency: number
+  /** how many rounds the session can run */
+  rounds: number
+  /** allow coworkers to disagree and argue toward a resolution */
+  debate: boolean
+  /** a short charter/culture line that shapes how they work together */
+  culture: string
 }
 
 /** A web source the model grounded an artifact on (via Google Search grounding). */

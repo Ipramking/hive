@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Artifact, EngineName, FeedMessage, ModeConfig, RunRecord, RunStatus } from './types'
+import type { Artifact, EngineName, FeedMessage, ModeConfig, OrgSettings, RunRecord, RunStatus } from './types'
 import { getEngine, resolveEngineName } from './engine'
 import { searchWeb } from './engine/webSearch'
 import { callResilient, looseJson } from './engine/llmClient'
@@ -12,11 +12,13 @@ import {
   loadApiKey,
   loadHistory,
   loadModes,
+  loadOrg,
   loadWebAccess,
   saveActiveModeId,
   saveApiKey,
   saveHistory,
   saveModes,
+  saveOrg,
   saveWebAccess,
 } from './lib/storage'
 
@@ -36,6 +38,9 @@ interface HiveState {
   autoTeam: ModeConfig | null
   apiKey: string
   webAccess: boolean
+  org: OrgSettings
+  /** user messages typed mid-session, consumed by the next round */
+  pendingUser: string[]
 
   task: string
   runStyle: 'relay' | 'floor'
@@ -63,6 +68,8 @@ interface HiveState {
   deleteMode: (id: string) => void
   setApiKey: (key: string) => void
   setWebAccess: (on: boolean) => void
+  setOrg: (patch: Partial<OrgSettings>) => void
+  postUser: (text: string) => void
 
   // run actions
   setTask: (task: string) => void
@@ -87,6 +94,8 @@ export const useHive = create<HiveState>((set, get) => ({
   autoTeam: null,
   apiKey: loadApiKey(),
   webAccess: loadWebAccess(),
+  org: loadOrg(),
+  pendingUser: [],
 
   task: '',
   runStyle: 'floor',
@@ -162,6 +171,22 @@ export const useHive = create<HiveState>((set, get) => ({
   setWebAccess: (on) => {
     saveWebAccess(on)
     set({ webAccess: on })
+  },
+
+  setOrg: (patch) => {
+    const next = { ...get().org, ...patch }
+    saveOrg(next)
+    set({ org: next })
+  },
+
+  // user speaks into the room — shown immediately, folded into the next round
+  postUser: (text) => {
+    const t = text.trim()
+    if (!t) return
+    set((s) => ({
+      feed: push(s.feed, { kind: 'user', text: t }),
+      pendingUser: [...s.pendingUser, t],
+    }))
   },
 
   setTask: (task) => set({ task }),
@@ -307,6 +332,7 @@ export const useHive = create<HiveState>((set, get) => ({
     const task = get().task.trim()
     const token = get().runToken + 1
 
+    const org = get().org
     set({
       runToken: token,
       runStatus: 'running',
@@ -314,6 +340,7 @@ export const useHive = create<HiveState>((set, get) => ({
       round: 0,
       artifacts: [],
       lastRanTask: task,
+      pendingUser: [],
       agentStatus: {},
       feed: push([], { kind: 'system', text: `Opening the floor on "${task || 'the task'}"` }),
     })
@@ -353,12 +380,21 @@ export const useHive = create<HiveState>((set, get) => ({
       transcript.push(t)
       if (transcript.length > 24) transcript.shift()
     }
-    const maxRounds = Math.min(6, Math.max(3, mode.agents.length))
-    const maxActivate = Math.min(3, mode.agents.length)
+    const maxRounds = Math.min(8, Math.max(3, org.rounds))
+    // how many work at once — cap at the roster and the number of brains so they truly run in parallel
+    const maxActivate = Math.min(mode.agents.length, Math.max(2, org.concurrency))
 
     for (let round = 1; round <= maxRounds; round++) {
       if (get().runToken !== token) return
       set({ round })
+
+      // fold in anything the human typed into the room since last round
+      const steerArr = get().pendingUser
+      const humanSteer = steerArr.join(' | ')
+      if (steerArr.length) {
+        steerArr.forEach((m) => line(`Human: ${m}`))
+        set({ pendingUser: [] })
+      }
 
       // manager decides who works this round (resilient across the whole pool)
       const mgrText = await callResilient(
@@ -371,6 +407,9 @@ export const useHive = create<HiveState>((set, get) => ({
           boardTitles: get().artifacts.map((a) => a.title),
           hasIntel: !!intel,
           maxActivate,
+          humanSteer,
+          debate: org.debate,
+          culture: org.culture,
         }),
         true,
         managerBrain(),
@@ -387,6 +426,16 @@ export const useHive = create<HiveState>((set, get) => ({
         }
       }
 
+      // collaboration: top up so `concurrency` coworkers work at once, not just the ones the lead named
+      if (!plan.done && plan.activate.length < maxActivate) {
+        const busy = new Set(plan.activate.map((a) => a.agentId))
+        for (const a of mode.agents) {
+          if (plan.activate.length >= maxActivate) break
+          if (busy.has(a.id)) continue
+          plan.activate.push({ agentId: a.id, instruction: 'Jump in — react to the room, push your angle, and ship your piece.' })
+        }
+      }
+
       set((s) => ({ feed: push(s.feed, { kind: 'manager', text: plan.note }) }))
       line(`Lead: ${plan.note}`)
       if (plan.done || plan.activate.length === 0) break
@@ -400,7 +449,7 @@ export const useHive = create<HiveState>((set, get) => ({
           const agent = mode.agents.find((a) => a.id === agentId)
           if (!agent) return
           const text = await callResilient(
-            buildAgentPrompt({ mode, agent, task, instruction, transcript: transcript.join('\n'), intel }),
+            buildAgentPrompt({ mode, agent, task, instruction, transcript: transcript.join('\n'), intel, debate: org.debate, culture: org.culture, humanSteer }),
             true,
             brainForIndex(agentIndex(agentId)),
           )
@@ -408,8 +457,8 @@ export const useHive = create<HiveState>((set, get) => ({
           const turn = parseAgentTurn(looseJson(text) ?? {}, mode)
 
           set((s) => ({ agentStatus: { ...s.agentStatus, [agentId]: 'working' } }))
-          set((s) => ({ feed: push(s.feed, { kind: 'agent', agentId, text: turn.say, to: turn.to ?? undefined }) }))
-          line(`${agent.name}: ${turn.say}`)
+          set((s) => ({ feed: push(s.feed, { kind: 'agent', agentId, text: turn.say, to: turn.to ?? undefined, stance: turn.stance ?? undefined }) }))
+          line(`${agent.name}${turn.stance === 'challenge' ? ' (pushes back)' : ''}: ${turn.say}`)
 
           if (turn.deliver) {
             const d = turn.deliver

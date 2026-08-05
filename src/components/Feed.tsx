@@ -4,7 +4,19 @@ import { ArrowRight, FileText, Sparkles, Radio } from 'lucide-react'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { cn } from '../lib/cn'
-import type { FeedMessage, ModeConfig } from '../types'
+import type { FeedMessage, ModeConfig, Stance } from '../types'
+
+const STANCE: Record<Stance, { label: string; cls: string }> = {
+  challenge: { label: 'pushes back', cls: 'border-amber-400/50 text-amber-300' },
+  build: { label: 'builds on', cls: 'border-sky-400/50 text-sky-300' },
+  ask: { label: 'asks', cls: 'border-violet-400/50 text-violet-300' },
+  agree: { label: 'agrees', cls: 'border-emerald-400/50 text-emerald-300' },
+}
+
+function StanceChip({ stance }: { stance: Stance }) {
+  const s = STANCE[stance]
+  return <span className={`rounded-full border px-1.5 py-px font-mono text-[8.5px] uppercase tracking-wider ${s.cls}`}>{s.label}</span>
+}
 
 export function Feed() {
   const mode = useHive((s) => s.activeMode())
@@ -55,6 +67,21 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
         className="mx-auto w-fit rounded-full border border-line bg-ink-800/70 px-3 py-1 text-center font-mono text-[10px] uppercase tracking-wider text-white/45"
       >
         {m.text}
+      </motion.div>
+    )
+  }
+
+  // the human speaking into the room
+  if (m.kind === 'user') {
+    return (
+      <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex justify-end">
+        <div
+          className="max-w-[85%] rounded-2xl rounded-br-sm border px-3 py-2 text-[13px] leading-relaxed"
+          style={{ borderColor: `${mode.accent}55`, background: `${mode.accent}1a`, color: '#fff' }}
+        >
+          <span className="mb-0.5 block font-mono text-[9px] uppercase tracking-wider" style={{ color: mode.accent }}>You</span>
+          {m.text}
+        </div>
       </motion.div>
     )
   }
@@ -110,6 +137,8 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
             {agent?.name}
           </span>
           <span className="eyebrow">{agent?.tag ?? agent?.role}</span>
+
+          {m.stance && m.stance !== 'agree' && <StanceChip stance={m.stance} />}
 
           {/* the "passing to" cross-talk detail — a live pulsing handoff */}
           {target && (

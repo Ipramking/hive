@@ -11,6 +11,8 @@ export function SettingsPage() {
   const setWebAccess = useHive((s) => s.setWebAccess)
   const runStyle = useHive((s) => s.runStyle)
   const setRunStyle = useHive((s) => s.setRunStyle)
+  const org = useHive((s) => s.org)
+  const setOrg = useHive((s) => s.setOrg)
   const history = useHive((s) => s.history)
   const clearHistory = useHive((s) => s.clearHistory)
   const engineName = useHive((s) => s.engineName())
@@ -85,6 +87,32 @@ export function SettingsPage() {
             <Row label="Live web search" hint="Coworkers ground their work in current data and cite sources.">
               <Toggle on={webAccess} onClick={() => setWebAccess(!webAccess)} icon={<Globe size={13} />} />
             </Row>
+          </div>
+        </Section>
+
+        {/* Organization */}
+        <Section title="Organization" desc="How the room works together. These shape behaviour — they don't slow the room down.">
+          <div className="space-y-2.5">
+            <Row label="Working at once" hint="How many coworkers collaborate in parallel each round.">
+              <Stepper value={org.concurrency} min={2} max={6} onChange={(v) => setOrg({ concurrency: v })} />
+            </Row>
+            <Row label="Rounds" hint="How long the session can run before it wraps.">
+              <Stepper value={org.rounds} min={3} max={8} onChange={(v) => setOrg({ rounds: v })} />
+            </Row>
+            <Row label="Debate" hint="Let coworkers disagree, argue, and resolve — not just agree.">
+              <Toggle on={org.debate} onClick={() => setOrg({ debate: !org.debate })} icon={<Users size={13} />} />
+            </Row>
+          </div>
+          <div className="mt-2.5 rounded-xl border border-line bg-ink-900/50 p-3">
+            <p className="text-sm font-medium text-white/80">Team culture</p>
+            <p className="mb-2 text-xs text-white/40">A charter line that shapes how they work together.</p>
+            <textarea
+              value={org.culture}
+              onChange={(e) => setOrg({ culture: e.target.value })}
+              rows={2}
+              placeholder="e.g. Move fast, disagree openly, ship real work over talk."
+              className="w-full resize-none rounded-lg border border-line bg-ink-900 px-3 py-2 text-sm text-white/85 outline-none focus:border-white/25"
+            />
           </div>
         </Section>
 
@@ -173,6 +201,16 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
           {o.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+function Stepper({ value, min, max, onChange }: { value: number; min: number; max: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-ink-900/70 p-0.5">
+      <button onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min} className="grid h-7 w-7 place-items-center rounded-full text-white/70 transition-colors hover:bg-ink-700 disabled:opacity-30">−</button>
+      <span className="min-w-6 text-center font-display text-sm font-bold">{value}</span>
+      <button onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max} className="grid h-7 w-7 place-items-center rounded-full text-white/70 transition-colors hover:bg-ink-700 disabled:opacity-30">+</button>
     </div>
   )
 }

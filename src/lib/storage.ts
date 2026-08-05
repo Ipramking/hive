@@ -1,4 +1,4 @@
-import type { ModeConfig, RunRecord } from '../types'
+import type { ModeConfig, OrgSettings, RunRecord } from '../types'
 import { builtInModes } from '../data/modes'
 
 const MODES_KEY = 'hive.modes.v1'
@@ -6,7 +6,33 @@ const KEY_KEY = 'hive.geminiKey.v1'
 const ACTIVE_KEY = 'hive.activeMode.v1'
 const HISTORY_KEY = 'hive.history.v1'
 const WEB_KEY = 'hive.webAccess.v1'
+const ORG_KEY = 'hive.org.v1'
 const HISTORY_CAP = 40
+
+export const DEFAULT_ORG: OrgSettings = {
+  concurrency: 4,
+  rounds: 5,
+  debate: true,
+  culture: 'Move fast, disagree openly, and ship real work over talk.',
+}
+
+export function loadOrg(): OrgSettings {
+  try {
+    const raw = localStorage.getItem(ORG_KEY)
+    if (!raw) return { ...DEFAULT_ORG }
+    return { ...DEFAULT_ORG, ...JSON.parse(raw) }
+  } catch {
+    return { ...DEFAULT_ORG }
+  }
+}
+
+export function saveOrg(o: OrgSettings) {
+  try {
+    localStorage.setItem(ORG_KEY, JSON.stringify(o))
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 /** Load modes: built-ins always present + any user-created custom modes. */
 export function loadModes(): ModeConfig[] {
