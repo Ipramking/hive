@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, ClipboardCopy, Download, FileText, Globe, X } from 'lucide-react'
+import { Check, ClipboardCopy, Download, FileText, FileCode2, FolderDown, Globe, X } from 'lucide-react'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
+import { downloadProject } from '../lib/exportProject'
 import type { Artifact } from '../types'
 
 export function OffTheHive() {
   const mode = useHive((s) => s.activeMode())
   const artifacts = useHive((s) => s.artifacts)
   const exportMarkdown = useHive((s) => s.exportMarkdown)
+  const currentRun = useHive((s) => s.currentRun)
   const lastRanTask = useHive((s) => s.lastRanTask)
   const [open, setOpen] = useState<Artifact | null>(null)
   const [copied, setCopied] = useState(false)
+  const codeCount = artifacts.filter((a) => a.kind === 'code').length
 
   const copyAll = async () => {
     try {
@@ -37,7 +40,9 @@ export function OffTheHive() {
     <div className="card flex items-center gap-3 px-3 py-2.5">
       <div className="flex shrink-0 flex-col leading-none">
         <p className="eyebrow">Off the hive</p>
-        <p className="mt-1 font-display text-sm font-bold">{artifacts.length} shipped</p>
+        <p className="mt-1 font-display text-sm font-bold">
+          {artifacts.length} shipped{codeCount > 0 ? ` · ${codeCount} files` : ''}
+        </p>
       </div>
 
       <div className="h-9 w-px bg-line" />
@@ -49,6 +54,7 @@ export function OffTheHive() {
           <AnimatePresence initial={false}>
             {artifacts.map((a) => {
               const agent = agentIn(mode, a.agentId)
+              const isCode = a.kind === 'code'
               return (
                 <motion.button
                   key={a.id}
@@ -58,10 +64,12 @@ export function OffTheHive() {
                   onClick={() => setOpen(a)}
                   className="paper flex shrink-0 items-center gap-2 rounded-md px-2.5 py-1.5 text-left shadow-[0_4px_14px_-6px_rgba(0,0,0,0.5)]"
                   style={{ borderTop: `3px solid ${agent?.color}` }}
-                  title={`${a.title} — ${agent?.name}`}
+                  title={`${a.filename || a.title} — ${agent?.name}`}
                 >
-                  <FileText size={12} className="text-paper-soft" />
-                  <span className="max-w-[180px] truncate font-display text-[12.5px] font-bold text-paper-ink">{a.title}</span>
+                  {isCode ? <FileCode2 size={12} className="text-paper-soft" /> : <FileText size={12} className="text-paper-soft" />}
+                  <span className={isCode ? 'max-w-[200px] truncate font-mono text-[11.5px] font-semibold text-paper-ink' : 'max-w-[180px] truncate font-display text-[12.5px] font-bold text-paper-ink'}>
+                    {isCode ? a.filename || a.title : a.title}
+                  </span>
                   <span className="font-mono text-[9px] uppercase tracking-wider text-paper-soft">{agent?.name}</span>
                 </motion.button>
               )
@@ -72,6 +80,16 @@ export function OffTheHive() {
 
       {artifacts.length > 0 && (
         <div className="flex shrink-0 items-center gap-1.5">
+          {codeCount > 0 && (
+            <button
+              onClick={() => downloadProject(currentRun())}
+              title="Download the whole project as a .zip"
+              className="flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors"
+              style={{ borderColor: `${mode.accent}66`, color: mode.accent }}
+            >
+              <FolderDown size={14} /> Project
+            </button>
+          )}
           <button onClick={copyAll} title="Copy all as Markdown" className="grid h-8 w-8 place-items-center rounded-lg border border-line text-white/70 transition-colors hover:bg-ink-700">
             {copied ? <Check size={14} className="text-emerald-400" /> : <ClipboardCopy size={14} />}
           </button>
@@ -109,9 +127,13 @@ function Reader({ artifact, onClose }: { artifact: Artifact; onClose: () => void
         style={{ borderTop: `4px solid ${agent?.color}` }}
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-4">
-          <div>
+          <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-wider text-paper-soft">{agent?.name} · {agent?.role}</p>
-            <h3 className="mt-1 font-display text-lg font-extrabold text-paper-ink">{artifact.title}</h3>
+            {artifact.kind === 'code' && artifact.filename ? (
+              <h3 className="mt-1 truncate font-mono text-base font-bold text-paper-ink">{artifact.filename}</h3>
+            ) : (
+              <h3 className="mt-1 font-display text-lg font-extrabold text-paper-ink">{artifact.title}</h3>
+            )}
           </div>
           <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-paper-soft transition-colors hover:bg-black/5">
             <X size={16} />

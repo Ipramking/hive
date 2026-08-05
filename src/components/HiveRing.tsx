@@ -43,7 +43,7 @@ export function HiveRing() {
       <div className="flex items-center justify-between px-1 pb-2">
         <p className="eyebrow">The hive</p>
         <p className="font-mono text-[10px] uppercase tracking-wider text-white/35">
-          {running ? `Round ${round} · ${activeCount} active` : `${n} coworkers`}
+          {running ? `Round ${round} · ${activeCount} active` : n === 0 ? 'waiting' : `${n} coworkers`}
         </p>
       </div>
 
@@ -98,15 +98,20 @@ export function HiveRing() {
           </svg>
 
           {/* the core — the hive's heart */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
             <motion.div
-              className="grid h-[15%] min-h-[54px] w-[15%] min-w-[54px] place-items-center rounded-full border border-line"
+              className="grid h-[54px] w-[54px] place-items-center rounded-full border border-line"
               style={{ background: `${mode.accent}14` }}
               animate={running ? { boxShadow: [`0 0 0 0 ${mode.accent}55`, `0 0 0 14px ${mode.accent}00`] } : {}}
               transition={{ duration: 1.8, repeat: Infinity }}
             >
               <span className="text-2xl">{mode.emoji}</span>
             </motion.div>
+            {n === 0 && (
+              <p className="mt-3 max-w-[220px] text-center text-xs leading-relaxed text-white/45">
+                {running ? 'Assembling the team…' : 'Type a task — the hive assembles the right team for it.'}
+              </p>
+            )}
           </div>
 
           {/* coworker cells */}

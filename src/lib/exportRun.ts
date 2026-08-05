@@ -10,7 +10,9 @@ export function runToMarkdown(r: RunRecord): string {
       const src = a.sources?.length
         ? `\n\n**Sources**\n${a.sources.map((s) => `- [${s.title}](${s.uri})`).join('\n')}`
         : ''
-      return `## ${a.title}\n*${a.agentName} — ${a.agentRole}*\n\n${a.body}${src}`
+      const heading = a.kind === 'code' && a.filename ? `\`${a.filename}\`` : a.title
+      const content = a.kind === 'code' ? `\`\`\`${a.language ?? ''}\n${a.body}\n\`\`\`` : a.body
+      return `## ${heading}\n*${a.agentName} — ${a.agentRole}*\n\n${content}${src}`
     })
     .join('\n\n---\n\n')
   return `${header}\n${body}\n`

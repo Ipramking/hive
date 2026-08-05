@@ -50,9 +50,9 @@ export function saveApiKey(key: string) {
 
 export function loadActiveModeId(): string {
   try {
-    return localStorage.getItem(ACTIVE_KEY) ?? 'normal'
+    return localStorage.getItem(ACTIVE_KEY) ?? 'auto'
   } catch {
-    return 'normal'
+    return 'auto'
   }
 }
 

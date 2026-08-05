@@ -57,6 +57,8 @@ export interface Source {
   uri: string
 }
 
+export type ArtifactKind = 'doc' | 'code'
+
 export interface Artifact {
   id: string
   stageId: string
@@ -64,6 +66,12 @@ export interface Artifact {
   title: string
   body: string
   sources?: Source[]
+  /** 'code' artifacts carry a real file; 'doc' is prose */
+  kind?: ArtifactKind
+  /** for code: the path/filename, e.g. "src/api/export.ts" */
+  filename?: string
+  /** for code: language hint for highlighting, e.g. "ts", "py" */
+  language?: string
 }
 
 export type RunStatus = 'draft' | 'running' | 'complete'
@@ -76,6 +84,9 @@ export interface RunArtifact {
   agentName: string
   agentRole: string
   sources?: Source[]
+  kind?: ArtifactKind
+  filename?: string
+  language?: string
 }
 
 /** A completed run, saved to history. */

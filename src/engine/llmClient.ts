@@ -1,4 +1,18 @@
-import type { Brain } from './brains'
+import { roster, type Brain } from './brains'
+
+/**
+ * Resilient call — try the preferred brain, then every other brain in the pool
+ * until one returns text. Makes a single rate-limited key unable to stall a run.
+ */
+export async function callResilient(prompt: string, json = true, preferred?: Brain): Promise<string> {
+  const all = roster()
+  const order = preferred ? [preferred, ...all.filter((b) => b !== preferred)] : all
+  for (const b of order) {
+    const t = await callLLM(b, prompt, json)
+    if (t && t.trim()) return t
+  }
+  return ''
+}
 
 /**
  * Call one brain in the server-side pool via /api/llm.

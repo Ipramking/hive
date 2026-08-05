@@ -7,6 +7,7 @@ import { alpha } from '../lib/color'
 import { cn } from '../lib/cn'
 
 const examplesById: Record<string, string[]> = {
+  auto: ['Build a REST API for a todo app', 'Scaffold a landing page for a coffee brand', 'Write a Python script to dedupe a CSV'],
   normal: ['Add a way for users to export their data as CSV', 'Let customers reschedule a booking themselves'],
   hackathon: ['Cut support ticket resolution time for a fintech', 'Help a logistics company predict delivery delays'],
 }
@@ -20,6 +21,7 @@ export function ControlDock() {
   const runStatus = useHive((s) => s.runStatus)
   const runStyle = useHive((s) => s.runStyle)
   const setRunStyle = useHive((s) => s.setRunStyle)
+  const activeModeId = useHive((s) => s.activeModeId)
   const round = useHive((s) => s.round)
   const engineName = useHive((s) => s.engineName())
   const webAccess = useHive((s) => s.webAccess)
@@ -41,7 +43,7 @@ export function ControlDock() {
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <div className="relative flex items-center rounded-full border border-line bg-ink-900/70 p-0.5 font-mono text-[10px] uppercase tracking-wide">
+          <div className={cn('relative flex items-center rounded-full border border-line bg-ink-900/70 p-0.5 font-mono text-[10px] uppercase tracking-wide', activeModeId === 'auto' && 'hidden')}>
             {(['floor', 'relay'] as const).map((s) => (
               <button
                 key={s}

@@ -172,7 +172,19 @@ export const incidentMode: ModeConfig = {
   ],
 }
 
-export const builtInModes: ModeConfig[] = [normalMode, hackathonMode, contentMode, incidentMode]
+/** The Auto sentinel — no fixed roster. The hive assembles a team for whatever task you give it. */
+export const autoMode: ModeConfig = {
+  id: 'auto',
+  name: 'Auto',
+  emoji: '✨',
+  accent: '#6d7cff',
+  tagline: 'Type a task — the hive assembles the right team for it.',
+  builtIn: true,
+  agents: [],
+  stages: [],
+}
+
+export const builtInModes: ModeConfig[] = [autoMode, normalMode, hackathonMode, contentMode, incidentMode]
 
 export function agentIn(mode: ModeConfig, id: string): Agent | undefined {
   return mode.agents.find((a) => a.id === id)

@@ -2,9 +2,10 @@ import { create } from 'zustand'
 import type { Artifact, EngineName, FeedMessage, ModeConfig, RunRecord, RunStatus } from './types'
 import { getEngine, resolveEngineName } from './engine'
 import { searchWeb } from './engine/webSearch'
-import { callLLM, looseJson } from './engine/llmClient'
+import { callResilient, looseJson } from './engine/llmClient'
 import { brainForIndex, managerBrain } from './engine/brains'
-import { buildAgentPrompt, buildManagerPrompt, parseAgentTurn, parseManager } from './engine/floor'
+import { buildAgentPrompt, buildManagerPrompt, buildWhatsLeftPrompt, parseAgentTurn, parseManager } from './engine/floor'
+import { buildTeamPrompt, fallbackTeam, parseTeam } from './engine/autoTeam'
 import { runToMarkdown } from './lib/exportRun'
 import {
   loadActiveModeId,
@@ -31,6 +32,8 @@ const push = (feed: FeedMessage[], m: Omit<FeedMessage, 'id' | 'ts'>): FeedMessa
 interface HiveState {
   modes: ModeConfig[]
   activeModeId: string
+  /** the ephemeral team the hive assembled for the current Auto run */
+  autoTeam: ModeConfig | null
   apiKey: string
   webAccess: boolean
 
@@ -81,6 +84,7 @@ const initialActive = (() => {
 export const useHive = create<HiveState>((set, get) => ({
   modes: initialModes,
   activeModeId: initialActive,
+  autoTeam: null,
   apiKey: loadApiKey(),
   webAccess: loadWebAccess(),
 
@@ -108,6 +112,7 @@ export const useHive = create<HiveState>((set, get) => ({
 
   activeMode: () => {
     const s = get()
+    if (s.activeModeId === 'auto' && s.autoTeam) return s.autoTeam
     return s.modes.find((m) => m.id === s.activeModeId) ?? s.modes[0]
   },
   engineName: () => resolveEngineName(get().apiKey),
@@ -117,6 +122,7 @@ export const useHive = create<HiveState>((set, get) => ({
     saveActiveModeId(id)
     set({
       activeModeId: id,
+      autoTeam: null,
       runStatus: 'draft',
       currentStageId: null,
       agentStatus: {},
@@ -162,7 +168,8 @@ export const useHive = create<HiveState>((set, get) => ({
   setRunStyle: (style) => set({ runStyle: style }),
 
   launch: async () => {
-    if (get().runStyle === 'floor') return get().runFloor()
+    // Auto has no fixed stages — it always runs as a live floor
+    if (get().runStyle === 'floor' || get().activeModeId === 'auto') return get().runFloor()
     return get().run()
   },
 
@@ -175,6 +182,7 @@ export const useHive = create<HiveState>((set, get) => ({
       feed: [],
       artifacts: [],
       lastRanTask: '',
+      autoTeam: get().activeModeId === 'auto' ? null : get().autoTeam,
       runToken: get().runToken + 1,
     }),
 
@@ -292,13 +300,12 @@ export const useHive = create<HiveState>((set, get) => ({
   },
 
   // Live Floor: a manager-led session where several coworkers work, talk, and
-  // hand off IN PARALLEL — each on its own brain in the pool.
+  // hand off IN PARALLEL — each on its own brain in the pool. Assembles its own
+  // team in Auto mode, scaffolds real files, and always ships a "What's left" doc.
   runFloor: async () => {
     if (get().runStatus === 'running') return
-    const mode = get().activeMode()
     const task = get().task.trim()
     const token = get().runToken + 1
-    const agentIndex = (id: string) => mode.agents.findIndex((a) => a.id === id)
 
     set({
       runToken: token,
@@ -307,14 +314,29 @@ export const useHive = create<HiveState>((set, get) => ({
       round: 0,
       artifacts: [],
       lastRanTask: task,
-      agentStatus: Object.fromEntries(mode.agents.map((a) => [a.id, 'idle'])),
-      feed: push([], {
-        kind: 'system',
-        text: `${mode.name} floor is live on "${task || 'the task'}" — ${mode.agents.length} coworkers in the room`,
-      }),
+      agentStatus: {},
+      feed: push([], { kind: 'system', text: `Opening the floor on "${task || 'the task'}"` }),
     })
 
-    // shared live web intel, pulled once for the whole room
+    // 1. Assemble the team (Auto mode) or use the picked mode's roster
+    let mode = get().activeMode()
+    if (get().activeModeId === 'auto') {
+      set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Assembling a team for this task…' }) }))
+      const teamText = await callResilient(buildTeamPrompt(task), true, managerBrain())
+      if (get().runToken !== token) return
+      mode = parseTeam(looseJson(teamText) ?? {}, task) ?? fallbackTeam(task)
+      set({ autoTeam: mode })
+      set((s) => ({
+        agentStatus: Object.fromEntries(mode.agents.map((a) => [a.id, 'idle'])),
+        feed: push(s.feed, { kind: 'system', text: `Team assembled — ${mode.agents.map((a) => a.name).join(', ')}` }),
+      }))
+    } else {
+      set({ agentStatus: Object.fromEntries(mode.agents.map((a) => [a.id, 'idle'])) })
+    }
+    if (!mode.agents.length) mode = fallbackTeam(task)
+    const agentIndex = (id: string) => mode.agents.findIndex((a) => a.id === id)
+
+    // 2. Shared live web intel, pulled once for the whole room
     let intel = ''
     let intelSources: { title: string; uri: string }[] = []
     if (get().webAccess && task) {
@@ -322,9 +344,7 @@ export const useHive = create<HiveState>((set, get) => ({
       if (web.context) {
         intel = web.context
         intelSources = web.sources
-        set((s) => ({
-          feed: push(s.feed, { kind: 'system', text: `Live web intel on the board — ${web.sources.length} sources` }),
-        }))
+        set((s) => ({ feed: push(s.feed, { kind: 'system', text: `Live web intel on the board — ${web.sources.length} sources` }) }))
       }
     }
 
@@ -340,9 +360,8 @@ export const useHive = create<HiveState>((set, get) => ({
       if (get().runToken !== token) return
       set({ round })
 
-      // manager decides who works this round
-      const mgrText = await callLLM(
-        managerBrain(),
+      // manager decides who works this round (resilient across the whole pool)
+      const mgrText = await callResilient(
         buildManagerPrompt({
           mode,
           task,
@@ -354,52 +373,62 @@ export const useHive = create<HiveState>((set, get) => ({
           maxActivate,
         }),
         true,
+        managerBrain(),
       )
       if (get().runToken !== token) return
-      const plan = parseManager(looseJson(mgrText) ?? {}, mode, maxActivate)
+      let plan = parseManager(looseJson(mgrText) ?? {}, mode, maxActivate)
+
+      // robustness: if the manager gave nothing on the first round, put the whole room to work anyway
+      if (plan.activate.length === 0 && round === 1) {
+        plan = {
+          note: 'Everyone take a piece and start shipping.',
+          done: false,
+          activate: mode.agents.slice(0, maxActivate).map((a) => ({ agentId: a.id, instruction: 'Do your part of this task now and ship a concrete file or doc.' })),
+        }
+      }
+
       set((s) => ({ feed: push(s.feed, { kind: 'manager', text: plan.note }) }))
       line(`Lead: ${plan.note}`)
       if (plan.done || plan.activate.length === 0) break
 
-      // everyone activated starts thinking at once
-      set((s) => ({
-        agentStatus: { ...s.agentStatus, ...Object.fromEntries(plan.activate.map((a) => [a.agentId, 'thinking'])) },
-      }))
+      set((s) => ({ agentStatus: { ...s.agentStatus, ...Object.fromEntries(plan.activate.map((a) => [a.agentId, 'thinking'])) } }))
       await sleep(280)
 
-      // run them in parallel — each on its own brain
+      // run them in parallel — each prefers its own brain, but falls back across the pool
       await Promise.all(
         plan.activate.map(async ({ agentId, instruction }) => {
           const agent = mode.agents.find((a) => a.id === agentId)
           if (!agent) return
-          const text = await callLLM(
-            brainForIndex(agentIndex(agentId)),
+          const text = await callResilient(
             buildAgentPrompt({ mode, agent, task, instruction, transcript: transcript.join('\n'), intel }),
             true,
+            brainForIndex(agentIndex(agentId)),
           )
           if (get().runToken !== token) return
           const turn = parseAgentTurn(looseJson(text) ?? {}, mode)
 
           set((s) => ({ agentStatus: { ...s.agentStatus, [agentId]: 'working' } }))
-          set((s) => ({
-            feed: push(s.feed, { kind: 'agent', agentId, text: turn.say, to: turn.to ?? undefined }),
-          }))
+          set((s) => ({ feed: push(s.feed, { kind: 'agent', agentId, text: turn.say, to: turn.to ?? undefined }) }))
           line(`${agent.name}: ${turn.say}`)
 
           if (turn.deliver) {
+            const d = turn.deliver
             const artifact: Artifact = {
               id: uid(),
               stageId: `floor-r${round}`,
               agentId,
-              title: turn.deliver.title,
-              body: turn.deliver.body,
-              ...(intel && intelSources.length ? { sources: intelSources } : {}),
+              title: d.title,
+              body: d.body,
+              kind: d.kind,
+              ...(d.filename ? { filename: d.filename } : {}),
+              ...(d.language ? { language: d.language } : {}),
+              ...(intel && intelSources.length && d.kind === 'doc' ? { sources: intelSources } : {}),
             }
             set((s) => ({
               artifacts: [...s.artifacts, artifact],
-              feed: push(s.feed, { kind: 'artifact', agentId, text: `${agent.name} dropped: ${turn.deliver!.title}` }),
+              feed: push(s.feed, { kind: 'artifact', agentId, text: `${agent.name} shipped: ${d.filename || d.title}` }),
             }))
-            line(`${agent.name} delivered "${turn.deliver.title}"`)
+            line(`${agent.name} shipped ${d.filename || d.title}`)
           }
           set((s) => ({ agentStatus: { ...s.agentStatus, [agentId]: 'done' } }))
         }),
@@ -409,6 +438,37 @@ export const useHive = create<HiveState>((set, get) => ({
 
     if (get().runToken !== token) return
 
+    // 3. Always close with a "What's left" handoff doc
+    set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Writing the "What’s left" handoff…' }) }))
+    const wlText = await callResilient(
+      buildWhatsLeftPrompt({
+        mode,
+        task,
+        deliverables: get().artifacts.map((a) => ({ title: a.title, filename: a.filename, kind: a.kind })),
+      }),
+      true,
+      managerBrain(),
+    )
+    if (get().runToken !== token) return
+    const wlBody =
+      (looseJson<{ body: string }>(wlText)?.body || '').trim() ||
+      `## What's left\n\n- [ ] Review the shipped files and wire them together\n- [ ] Fill in any stubbed logic\n- [ ] Add tests and error handling\n- [ ] Deploy\n\n_(Generated offline — the pool was unavailable.)_`
+    const wlArtifact: Artifact = {
+      id: uid(),
+      stageId: 'floor-wrap',
+      agentId: mode.agents[0]?.id ?? 'lead',
+      title: "What's left",
+      body: wlBody,
+      kind: 'code',
+      filename: 'WHATS_LEFT.md',
+      language: 'md',
+    }
+    set((s) => ({
+      artifacts: [...s.artifacts, wlArtifact],
+      feed: push(s.feed, { kind: 'artifact', agentId: wlArtifact.agentId, text: 'Shipped: WHATS_LEFT.md' }),
+    }))
+
+    const codeCount = get().artifacts.filter((a) => a.kind === 'code').length
     const record: RunRecord = {
       id: uid(),
       modeId: mode.id,
@@ -426,6 +486,9 @@ export const useHive = create<HiveState>((set, get) => ({
           agentName: agent?.name ?? '',
           agentRole: agent?.role ?? '',
           ...(a.sources?.length ? { sources: a.sources } : {}),
+          ...(a.kind ? { kind: a.kind } : {}),
+          ...(a.filename ? { filename: a.filename } : {}),
+          ...(a.language ? { language: a.language } : {}),
         }
       }),
     }
@@ -437,10 +500,7 @@ export const useHive = create<HiveState>((set, get) => ({
       round: 0,
       currentStageId: null,
       history: nextHistory,
-      feed: push(s.feed, {
-        kind: 'system',
-        text: `Session wrapped — ${get().artifacts.length} deliverables on the board. ✅`,
-      }),
+      feed: push(s.feed, { kind: 'system', text: `Session wrapped — ${codeCount} files + docs on the board. ✅` }),
     }))
   },
 
@@ -464,6 +524,9 @@ export const useHive = create<HiveState>((set, get) => ({
           agentName: agent?.name ?? '',
           agentRole: agent?.role ?? '',
           ...(a.sources?.length ? { sources: a.sources } : {}),
+          ...(a.kind ? { kind: a.kind } : {}),
+          ...(a.filename ? { filename: a.filename } : {}),
+          ...(a.language ? { language: a.language } : {}),
         }
       }),
     }
