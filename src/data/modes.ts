@@ -17,6 +17,7 @@ export const normalMode: ModeConfig = {
       color: '#6d7cff',
       blurb: 'Turns a fuzzy ask into a scoped plan and keeps everyone pointed at the outcome.',
       skills: ['Scoping', 'Prioritisation', 'User stories'],
+      tag: 'Product',
     },
     {
       id: 'research',
@@ -26,6 +27,7 @@ export const normalMode: ModeConfig = {
       color: '#3fd0c9',
       blurb: 'Digs into the domain, users, and constraints so the team builds the right thing.',
       skills: ['Discovery', 'Synthesis', 'Competitive scan'],
+      tag: 'Research',
     },
     {
       id: 'design',
@@ -35,6 +37,7 @@ export const normalMode: ModeConfig = {
       color: '#ff7ab6',
       blurb: 'Shapes the flow and interface so the solution is obvious to use.',
       skills: ['UX flows', 'UI system', 'Prototyping'],
+      tag: 'Design',
     },
     {
       id: 'eng',
@@ -44,6 +47,7 @@ export const normalMode: ModeConfig = {
       color: '#f5c451',
       blurb: 'Builds the thing — pragmatic, ships, leaves a clean seam for the next change.',
       skills: ['Architecture', 'Implementation', 'Integration'],
+      tag: 'Engineering',
     },
     {
       id: 'qa',
@@ -53,6 +57,7 @@ export const normalMode: ModeConfig = {
       color: '#8b96ff',
       blurb: 'Pressure-tests the work, catches the sharp edges, signs off before it ships.',
       skills: ['Test plans', 'Edge cases', 'Sign-off'],
+      tag: 'Quality',
     },
   ],
   stages: [
@@ -81,6 +86,7 @@ export const hackathonMode: ModeConfig = {
       color: '#ff7a45',
       blurb: 'Researches a real target company and surfaces the sharpest problem worth solving.',
       skills: ['Company research', 'Problem hunting', 'Market read'],
+      tag: 'Research',
     },
     {
       id: 'strat',
@@ -90,6 +96,7 @@ export const hackathonMode: ModeConfig = {
       color: '#ffb347',
       blurb: 'Frames the opportunity, picks the wedge, and defines what winning looks like.',
       skills: ['Positioning', 'Wedge', 'Success metric'],
+      tag: 'Strategy',
     },
     {
       id: 'builder',
@@ -99,6 +106,7 @@ export const hackathonMode: ModeConfig = {
       color: '#ff9d6e',
       blurb: 'Turns the concept into a demo-able MVP scope the team can ship overnight.',
       skills: ['MVP scoping', 'Stack pick', 'Demo plan'],
+      tag: 'Engineering',
     },
     {
       id: 'pitch',
@@ -108,6 +116,7 @@ export const hackathonMode: ModeConfig = {
       color: '#ffd07a',
       blurb: 'Packages the story into a punchy pitch judges remember.',
       skills: ['Narrative', 'Deck outline', 'Demo script'],
+      tag: 'Story',
     },
   ],
   stages: [
@@ -128,10 +137,10 @@ export const contentMode: ModeConfig = {
   tagline: 'Turn a topic into a published, on-brand piece.',
   builtIn: true,
   agents: [
-    { id: 'strategist', name: 'Vera', role: 'Content Strategist', emoji: '🎯', color: '#8b5cf6', blurb: 'Finds the angle and the audience the piece is really for.', skills: ['Angle', 'Audience', 'Outline'] },
-    { id: 'writer', name: 'Milo', role: 'Writer', emoji: '✍️', color: '#a78bfa', blurb: 'Drafts it in a clear, human voice that keeps people reading.', skills: ['Drafting', 'Voice', 'Hooks'] },
-    { id: 'editor', name: 'Sage', role: 'Editor', emoji: '📝', color: '#c4b5fd', blurb: 'Tightens every line and kills the fluff.', skills: ['Line edits', 'Clarity', 'Trim'] },
-    { id: 'distributor', name: 'Nova', role: 'Distribution', emoji: '📣', color: '#7c3aed', blurb: 'Repackages it for each channel so it actually gets seen.', skills: ['Channels', 'Repurposing', 'CTA'] },
+    { id: 'strategist', name: 'Vera', role: 'Content Strategist', emoji: '🎯', color: '#8b5cf6', blurb: 'Finds the angle and the audience the piece is really for.', skills: ['Angle', 'Audience', 'Outline'], tag: 'Strategy' },
+    { id: 'writer', name: 'Milo', role: 'Writer', emoji: '✍️', color: '#a78bfa', blurb: 'Drafts it in a clear, human voice that keeps people reading.', skills: ['Drafting', 'Voice', 'Hooks'], tag: 'Editorial' },
+    { id: 'editor', name: 'Sage', role: 'Editor', emoji: '📝', color: '#c4b5fd', blurb: 'Tightens every line and kills the fluff.', skills: ['Line edits', 'Clarity', 'Trim'], tag: 'Editorial' },
+    { id: 'distributor', name: 'Nova', role: 'Distribution', emoji: '📣', color: '#7c3aed', blurb: 'Repackages it for each channel so it actually gets seen.', skills: ['Channels', 'Repurposing', 'CTA'], tag: 'Growth' },
   ],
   stages: [
     { id: 'angle', title: 'Find the angle', ownerId: 'strategist', goal: 'Pick the sharpest angle for a specific audience.', produces: 'Content brief' },
@@ -150,10 +159,10 @@ export const incidentMode: ModeConfig = {
   tagline: 'Triage, mitigate, and close out a production incident.',
   builtIn: true,
   agents: [
-    { id: 'ic', name: 'Rhea', role: 'Incident Commander', emoji: '📟', color: '#ef4444', blurb: 'Runs the incident, keeps everyone coordinated and calm.', skills: ['Coordination', 'Comms', 'Decisions'] },
-    { id: 'debugger', name: 'Cole', role: 'Debugger', emoji: '🔍', color: '#f87171', blurb: 'Traces the failure to its root cause fast.', skills: ['Root cause', 'Logs', 'Repro'] },
-    { id: 'mitigator', name: 'Ivy', role: 'Mitigator', emoji: '🩹', color: '#fb923c', blurb: 'Ships the fastest safe fix to stop the bleeding.', skills: ['Rollback', 'Hotfix', 'Guardrails'] },
-    { id: 'scribe', name: 'Wren', role: 'Postmortem Scribe', emoji: '📄', color: '#fca5a5', blurb: 'Captures the timeline and the blameless learnings.', skills: ['Timeline', 'Postmortem', 'Actions'] },
+    { id: 'ic', name: 'Rhea', role: 'Incident Commander', emoji: '📟', color: '#ef4444', blurb: 'Runs the incident, keeps everyone coordinated and calm.', skills: ['Coordination', 'Comms', 'Decisions'], tag: 'Command' },
+    { id: 'debugger', name: 'Cole', role: 'Debugger', emoji: '🔍', color: '#f87171', blurb: 'Traces the failure to its root cause fast.', skills: ['Root cause', 'Logs', 'Repro'], tag: 'Engineering' },
+    { id: 'mitigator', name: 'Ivy', role: 'Mitigator', emoji: '🩹', color: '#fb923c', blurb: 'Ships the fastest safe fix to stop the bleeding.', skills: ['Rollback', 'Hotfix', 'Guardrails'], tag: 'Ops' },
+    { id: 'scribe', name: 'Wren', role: 'Postmortem Scribe', emoji: '📄', color: '#fca5a5', blurb: 'Captures the timeline and the blameless learnings.', skills: ['Timeline', 'Postmortem', 'Actions'], tag: 'Docs' },
   ],
   stages: [
     { id: 'triage', title: 'Triage', ownerId: 'ic', goal: 'Assess severity, scope, and who is impacted.', produces: 'Incident summary' },

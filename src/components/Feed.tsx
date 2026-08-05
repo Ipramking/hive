@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, FileText, Sparkles } from 'lucide-react'
+import { ArrowRight, FileText, Sparkles, Radio } from 'lucide-react'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { cn } from '../lib/cn'
@@ -24,7 +24,7 @@ export function Feed() {
           </div>
           <p className="font-display text-base font-bold text-white/75">The floor is quiet.</p>
           <p className="mt-1.5 text-xs leading-relaxed text-white/40">
-            Give the org a task and watch your AI coworkers pick it up, hand off, and ship.
+            Give the room a task and watch your AI coworkers pick it up, talk it through, hand off, and ship — all at once.
           </p>
         </div>
       </div>
@@ -45,6 +45,7 @@ export function Feed() {
 
 function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
   const agent = m.agentId ? agentIn(mode, m.agentId) : undefined
+  const target = m.to ? agentIn(mode, m.to) : undefined
 
   if (m.kind === 'system') {
     return (
@@ -54,6 +55,21 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
         className="mx-auto w-fit rounded-full border border-line bg-ink-800/70 px-3 py-1 text-center font-mono text-[10px] uppercase tracking-wider text-white/45"
       >
         {m.text}
+      </motion.div>
+    )
+  }
+
+  // Team lead / manager voice
+  if (m.kind === 'manager') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="mx-auto flex w-fit max-w-[90%] items-center gap-2 rounded-full border border-white/15 bg-gradient-to-r from-white/[0.06] to-transparent px-3.5 py-1.5"
+      >
+        <Radio size={13} className="text-white/70" />
+        <span className="font-mono text-[10px] uppercase tracking-wider text-white/45">Lead</span>
+        <span className="text-[12.5px] text-white/80">{m.text}</span>
       </motion.div>
     )
   }
@@ -74,26 +90,49 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
   const isArtifact = m.kind === 'artifact'
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-2.5">
-      <div
+      <motion.div
         className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sm"
         style={{ background: `${agent?.color}22`, boxShadow: `inset 0 0 0 1px ${agent?.color}44` }}
+        initial={{ scale: 0.6, rotate: -8 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 20 }}
       >
         {agent?.emoji}
-      </div>
+      </motion.div>
       <div
         className={cn(
           'min-w-0 flex-1 rounded-xl border px-3 py-2',
           isArtifact ? 'border-emerald-500/25 bg-emerald-500/[0.06]' : 'border-line bg-ink-800/50',
         )}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-display text-sm font-bold" style={{ color: agent?.color }}>
             {agent?.name}
           </span>
-          <span className="eyebrow">{agent?.role}</span>
+          <span className="eyebrow">{agent?.tag ?? agent?.role}</span>
+
+          {/* the "passing to" cross-talk detail — a live pulsing handoff */}
+          {target && (
+            <motion.span
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider"
+              style={{ borderColor: `${target.color}55`, color: target.color, background: `${target.color}12` }}
+            >
+              <motion.span
+                className="inline-block"
+                animate={{ x: [0, 3, 0] }}
+                transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <ArrowRight size={9} />
+              </motion.span>
+              {target.name}
+            </motion.span>
+          )}
+
           {isArtifact && (
             <span className="ml-auto flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-emerald-400">
-              <FileText size={11} /> artifact
+              <FileText size={11} /> shipped
             </span>
           )}
         </div>

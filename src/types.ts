@@ -8,6 +8,8 @@ export interface Agent {
   color: string
   blurb: string
   skills: string[]
+  /** org/department tag shown on the profile, e.g. "Engineering" */
+  tag?: string
 }
 
 /** A single step in a workflow, owned by one agent. */
@@ -36,7 +38,7 @@ export interface ModeConfig {
   stages: Stage[]
 }
 
-export type MessageKind = 'system' | 'agent' | 'handoff' | 'artifact'
+export type MessageKind = 'system' | 'agent' | 'handoff' | 'artifact' | 'manager'
 
 export interface FeedMessage {
   id: string
@@ -45,6 +47,8 @@ export interface FeedMessage {
   stageId?: string
   text: string
   ts: number
+  /** agent id this message is directed at — used to render "passing to" cross-talk */
+  to?: string
 }
 
 /** A web source the model grounded an artifact on (via Google Search grounding). */

@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import type { Artifact, EngineName, FeedMessage, ModeConfig, RunRecord, RunStatus } from './types'
 import { getEngine, resolveEngineName } from './engine'
+import { searchWeb } from './engine/webSearch'
+import { callLLM, looseJson } from './engine/llmClient'
+import { brainForIndex, managerBrain } from './engine/brains'
+import { buildAgentPrompt, buildManagerPrompt, parseAgentTurn, parseManager } from './engine/floor'
 import { runToMarkdown } from './lib/exportRun'
 import {
   loadActiveModeId,
@@ -31,6 +35,8 @@ interface HiveState {
   webAccess: boolean
 
   task: string
+  runStyle: 'relay' | 'floor'
+  round: number
   runStatus: RunStatus
   currentStageId: string | null
   agentStatus: Record<string, 'idle' | 'thinking' | 'working' | 'done'>
@@ -57,8 +63,11 @@ interface HiveState {
 
   // run actions
   setTask: (task: string) => void
+  setRunStyle: (style: 'relay' | 'floor') => void
   reset: () => void
   run: () => Promise<void>
+  runFloor: () => Promise<void>
+  launch: () => Promise<void>
   currentRun: () => RunRecord
   exportMarkdown: () => string
 }
@@ -76,6 +85,8 @@ export const useHive = create<HiveState>((set, get) => ({
   webAccess: loadWebAccess(),
 
   task: '',
+  runStyle: 'floor',
+  round: 0,
   runStatus: 'draft',
   currentStageId: null,
   agentStatus: {},
@@ -148,11 +159,18 @@ export const useHive = create<HiveState>((set, get) => ({
   },
 
   setTask: (task) => set({ task }),
+  setRunStyle: (style) => set({ runStyle: style }),
+
+  launch: async () => {
+    if (get().runStyle === 'floor') return get().runFloor()
+    return get().run()
+  },
 
   reset: () =>
     set({
       runStatus: 'draft',
       currentStageId: null,
+      round: 0,
       agentStatus: {},
       feed: [],
       artifacts: [],
@@ -270,6 +288,159 @@ export const useHive = create<HiveState>((set, get) => ({
       currentStageId: null,
       history: nextHistory,
       feed: push(s.feed, { kind: 'system', text: `${mode.name} complete — ${mode.stages.length} deliverables ready. ✅` }),
+    }))
+  },
+
+  // Live Floor: a manager-led session where several coworkers work, talk, and
+  // hand off IN PARALLEL — each on its own brain in the pool.
+  runFloor: async () => {
+    if (get().runStatus === 'running') return
+    const mode = get().activeMode()
+    const task = get().task.trim()
+    const token = get().runToken + 1
+    const agentIndex = (id: string) => mode.agents.findIndex((a) => a.id === id)
+
+    set({
+      runToken: token,
+      runStatus: 'running',
+      currentStageId: null,
+      round: 0,
+      artifacts: [],
+      lastRanTask: task,
+      agentStatus: Object.fromEntries(mode.agents.map((a) => [a.id, 'idle'])),
+      feed: push([], {
+        kind: 'system',
+        text: `${mode.name} floor is live on "${task || 'the task'}" — ${mode.agents.length} coworkers in the room`,
+      }),
+    })
+
+    // shared live web intel, pulled once for the whole room
+    let intel = ''
+    let intelSources: { title: string; uri: string }[] = []
+    if (get().webAccess && task) {
+      const web = await searchWeb(task)
+      if (web.context) {
+        intel = web.context
+        intelSources = web.sources
+        set((s) => ({
+          feed: push(s.feed, { kind: 'system', text: `Live web intel on the board — ${web.sources.length} sources` }),
+        }))
+      }
+    }
+
+    const transcript: string[] = []
+    const line = (t: string) => {
+      transcript.push(t)
+      if (transcript.length > 24) transcript.shift()
+    }
+    const maxRounds = Math.min(6, Math.max(3, mode.agents.length))
+    const maxActivate = Math.min(3, mode.agents.length)
+
+    for (let round = 1; round <= maxRounds; round++) {
+      if (get().runToken !== token) return
+      set({ round })
+
+      // manager decides who works this round
+      const mgrText = await callLLM(
+        managerBrain(),
+        buildManagerPrompt({
+          mode,
+          task,
+          round,
+          maxRounds,
+          transcript: transcript.join('\n'),
+          boardTitles: get().artifacts.map((a) => a.title),
+          hasIntel: !!intel,
+          maxActivate,
+        }),
+        true,
+      )
+      if (get().runToken !== token) return
+      const plan = parseManager(looseJson(mgrText) ?? {}, mode, maxActivate)
+      set((s) => ({ feed: push(s.feed, { kind: 'manager', text: plan.note }) }))
+      line(`Lead: ${plan.note}`)
+      if (plan.done || plan.activate.length === 0) break
+
+      // everyone activated starts thinking at once
+      set((s) => ({
+        agentStatus: { ...s.agentStatus, ...Object.fromEntries(plan.activate.map((a) => [a.agentId, 'thinking'])) },
+      }))
+      await sleep(280)
+
+      // run them in parallel — each on its own brain
+      await Promise.all(
+        plan.activate.map(async ({ agentId, instruction }) => {
+          const agent = mode.agents.find((a) => a.id === agentId)
+          if (!agent) return
+          const text = await callLLM(
+            brainForIndex(agentIndex(agentId)),
+            buildAgentPrompt({ mode, agent, task, instruction, transcript: transcript.join('\n'), intel }),
+            true,
+          )
+          if (get().runToken !== token) return
+          const turn = parseAgentTurn(looseJson(text) ?? {}, mode)
+
+          set((s) => ({ agentStatus: { ...s.agentStatus, [agentId]: 'working' } }))
+          set((s) => ({
+            feed: push(s.feed, { kind: 'agent', agentId, text: turn.say, to: turn.to ?? undefined }),
+          }))
+          line(`${agent.name}: ${turn.say}`)
+
+          if (turn.deliver) {
+            const artifact: Artifact = {
+              id: uid(),
+              stageId: `floor-r${round}`,
+              agentId,
+              title: turn.deliver.title,
+              body: turn.deliver.body,
+              ...(intel && intelSources.length ? { sources: intelSources } : {}),
+            }
+            set((s) => ({
+              artifacts: [...s.artifacts, artifact],
+              feed: push(s.feed, { kind: 'artifact', agentId, text: `${agent.name} dropped: ${turn.deliver!.title}` }),
+            }))
+            line(`${agent.name} delivered "${turn.deliver.title}"`)
+          }
+          set((s) => ({ agentStatus: { ...s.agentStatus, [agentId]: 'done' } }))
+        }),
+      )
+      await sleep(320)
+    }
+
+    if (get().runToken !== token) return
+
+    const record: RunRecord = {
+      id: uid(),
+      modeId: mode.id,
+      modeName: mode.name,
+      modeEmoji: mode.emoji,
+      accent: mode.accent,
+      task: get().lastRanTask,
+      engineName: 'gemini',
+      ts: Date.now(),
+      artifacts: get().artifacts.map((a) => {
+        const agent = mode.agents.find((ag) => ag.id === a.agentId)
+        return {
+          title: a.title,
+          body: a.body,
+          agentName: agent?.name ?? '',
+          agentRole: agent?.role ?? '',
+          ...(a.sources?.length ? { sources: a.sources } : {}),
+        }
+      }),
+    }
+    const nextHistory = [record, ...get().history]
+    saveHistory(nextHistory)
+
+    set((s) => ({
+      runStatus: 'complete',
+      round: 0,
+      currentStageId: null,
+      history: nextHistory,
+      feed: push(s.feed, {
+        kind: 'system',
+        text: `Session wrapped — ${get().artifacts.length} deliverables on the board. ✅`,
+      }),
     }))
   },
 

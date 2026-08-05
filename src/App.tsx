@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react'
+import { motion } from 'framer-motion'
 import { Hexagon } from 'lucide-react'
 import { ModeBar } from './components/ModeBar'
 import { OrgPanel } from './components/OrgPanel'
@@ -7,12 +8,14 @@ import { Artifacts } from './components/Artifacts'
 import { SettingsModal } from './components/SettingsModal'
 import { ModeEditor } from './components/ModeEditor'
 import { HistoryModal } from './components/HistoryModal'
+import { LiquidBackground } from './components/LiquidBackground'
 import { useHive } from './store'
 import { alpha } from './lib/color'
 import type { ModeConfig } from './types'
 
 export default function App() {
   const mode = useHive((s) => s.activeMode())
+  const running = useHive((s) => s.runStatus === 'running')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
@@ -32,18 +35,26 @@ export default function App() {
       className="mx-auto flex h-full max-w-[1500px] flex-col px-4 py-4 sm:px-6"
       style={{ '--accent': mode.accent } as CSSProperties}
     >
+      <LiquidBackground accent={mode.accent} active={running} />
       <header className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
-          <div
+          <motion.div
             className="relative grid h-11 w-11 place-items-center rounded-xl border border-line"
-            style={{ background: alpha(mode.accent, 0.14), boxShadow: `0 0 28px ${alpha(mode.accent, 0.22)}` }}
+            style={{ background: alpha(mode.accent, 0.14) }}
+            animate={{ boxShadow: [`0 0 18px ${alpha(mode.accent, 0.18)}`, `0 0 34px ${alpha(mode.accent, 0.34)}`, `0 0 18px ${alpha(mode.accent, 0.18)}`] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Hexagon size={20} style={{ color: mode.accent }} strokeWidth={2.25} />
+            <motion.div
+              animate={{ rotate: running ? 360 : 0 }}
+              transition={{ duration: 8, repeat: running ? Infinity : 0, ease: 'linear' }}
+            >
+              <Hexagon size={20} style={{ color: mode.accent }} strokeWidth={2.25} />
+            </motion.div>
             <span
               className="absolute h-1.5 w-1.5 rounded-full"
               style={{ background: mode.accent, boxShadow: `0 0 10px ${mode.accent}` }}
             />
-          </div>
+          </motion.div>
           <div>
             <p className="eyebrow mb-0.5">AI coworkers · at work</p>
             <h1 className="font-display text-2xl font-extrabold leading-none tracking-tight">Hive</h1>
