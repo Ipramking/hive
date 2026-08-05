@@ -29,15 +29,13 @@ export function Feed() {
 
   if (feed.length === 0) {
     return (
-      <div className="grid flex-1 place-items-center text-center">
-        <div className="max-w-xs px-6">
-          <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-full border border-line bg-ink-800">
-            <Sparkles size={18} className="text-white/50" />
+      <div className="flex h-full items-center justify-center overflow-hidden px-4 text-center">
+        <div className="max-w-[240px]">
+          <div className="mx-auto mb-2.5 grid h-10 w-10 place-items-center rounded-full border border-line bg-ink-800">
+            <Sparkles size={16} className="text-white/50" />
           </div>
-          <p className="font-display text-base font-bold text-white/75">The floor is quiet.</p>
-          <p className="mt-1.5 text-xs leading-relaxed text-white/40">
-            Give the room a task and watch your AI coworkers pick it up, talk it through, hand off, and ship — all at once.
-          </p>
+          <p className="font-display text-sm font-bold text-white/75">The floor is quiet.</p>
+          <p className="mt-1 text-xs leading-snug text-white/40">Give the room a task and watch your coworkers take it on — together.</p>
         </div>
       </div>
     )
