@@ -96,11 +96,7 @@ export function ControlDock() {
         />
 
         {runStatus === 'complete' || running ? (
-          <button
-            onClick={reset}
-            disabled={running}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:bg-ink-700 disabled:opacity-50"
-          >
+          <button onClick={reset} disabled={running} className="btn-soft mt-2 w-full">
             {running ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
             {running ? (floor ? `Working · round ${round}` : 'Running…') : 'Clear the floor'}
           </button>
@@ -172,10 +168,10 @@ function ChatInput({ accent }: { accent: string }) {
           onClick={send}
           disabled={!draft.trim()}
           title="Send to the room"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors disabled:opacity-30"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-all hover:scale-110 disabled:scale-100 disabled:opacity-30"
           style={{ color: accent }}
         >
-          <SendHorizonal size={16} />
+          <SendHorizonal size={17} />
         </button>
       </div>
     </div>

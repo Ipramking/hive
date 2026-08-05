@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, ClipboardCopy, Download, FileText, FileCode2, FolderDown, Globe, X } from 'lucide-react'
+import { Check, ClipboardCopy, Download, FileText, FileCode2, FileDown, FolderDown, Globe, X } from 'lucide-react'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { downloadProject } from '../lib/exportProject'
+import { downloadPdf } from '../lib/exportPdf'
 import type { Artifact } from '../types'
 
 export function OffTheHive() {
@@ -48,7 +49,7 @@ export function OffTheHive() {
       <div className="h-9 w-px bg-line" />
 
       {artifacts.length === 0 ? (
-        <p className="text-xs text-white/35">Finished work lands here as the hive ships it.</p>
+        <p className="text-xs text-white/50">Finished work lands here as the hive ships it.</p>
       ) : (
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5">
           <AnimatePresence initial={false}>
@@ -90,11 +91,14 @@ export function OffTheHive() {
               <FolderDown size={14} /> Project
             </button>
           )}
-          <button onClick={copyAll} title="Copy all as Markdown" className="grid h-8 w-8 place-items-center rounded-lg border border-line text-white/70 transition-colors hover:bg-ink-700">
-            {copied ? <Check size={14} className="text-emerald-400" /> : <ClipboardCopy size={14} />}
+          <button onClick={copyAll} title="Copy all as Markdown" className="btn-icon">
+            {copied ? <Check size={15} className="text-emerald-400" /> : <ClipboardCopy size={15} />}
           </button>
-          <button onClick={download} title="Download all as Markdown" className="grid h-8 w-8 place-items-center rounded-lg border border-line text-white/70 transition-colors hover:bg-ink-700">
-            <Download size={14} />
+          <button onClick={download} title="Download as Markdown (.md)" className="btn-icon">
+            <Download size={15} />
+          </button>
+          <button onClick={() => downloadPdf(currentRun())} title="Download as PDF" className="btn-icon">
+            <FileDown size={15} />
           </button>
         </div>
       )}

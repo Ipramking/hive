@@ -7,9 +7,9 @@ import { alpha } from '../lib/color'
  */
 export function LiquidBackground({ accent, active }: { accent: string; active: boolean }) {
   const blobs = [
-    { size: 620, from: '8%', to: '18%', top: '-8%', left: '-6%', dur: 26, hue: accent },
-    { size: 520, from: '70%', to: '58%', top: '35%', left: '62%', dur: 32, hue: '#ff7a45' },
-    { size: 460, from: '30%', to: '44%', top: '68%', left: '12%', dur: 30, hue: '#3fd0c9' },
+    { size: 640, top: '-10%', left: '-8%', dur: 26, mul: 1 },
+    { size: 520, top: '38%', left: '64%', dur: 32, mul: 0.7 },
+    { size: 480, top: '70%', left: '10%', dur: 30, mul: 0.85 },
   ]
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -22,7 +22,7 @@ export function LiquidBackground({ accent, active }: { accent: string; active: b
             height: b.size,
             top: b.top,
             left: b.left,
-            background: `radial-gradient(circle at 50% 50%, ${alpha(i === 0 ? accent : b.hue, active ? 0.5 : 0.32)}, transparent 70%)`,
+            background: `radial-gradient(circle at 50% 50%, ${alpha(accent, (active ? 0.42 : 0.26) * b.mul)}, transparent 70%)`,
           }}
           animate={{
             x: ['-4%', '6%', '-2%', '-4%'],
