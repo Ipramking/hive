@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { PanelLeftClose, PanelLeft, Plus, History, Settings, Hexagon, Pencil } from 'lucide-react'
+import { PanelLeftClose, PanelLeft, Plus, History, Settings, Pencil } from 'lucide-react'
 import { useHive } from '../store'
 import { alpha } from '../lib/color'
 import { cn } from '../lib/cn'
@@ -29,36 +29,13 @@ export function Sidebar({ collapsed, onToggle, view, onNewMode, onEditMode, onHi
       transition={{ type: 'spring', stiffness: 320, damping: 34 }}
       className="card flex h-full shrink-0 flex-col overflow-hidden"
     >
-      {/* brand + collapse */}
-      <div className={cn('flex items-center gap-2 border-b border-line p-3', collapsed && 'justify-center')}>
-        <button onClick={onHome} className="flex items-center gap-2" title="Hive">
-          <motion.span
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line"
-            style={{ background: alpha(active.accent, 0.14) }}
-            animate={{ boxShadow: [`0 0 12px ${alpha(active.accent, 0.15)}`, `0 0 22px ${alpha(active.accent, 0.32)}`, `0 0 12px ${alpha(active.accent, 0.15)}`] }}
-            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <Hexagon size={17} style={{ color: active.accent }} strokeWidth={2.4} />
-          </motion.span>
-          {!collapsed && (
-            <span className="flex flex-col leading-none">
-              <span className="font-display text-lg font-extrabold tracking-tight">Hive</span>
-              <span className="eyebrow mt-0.5">AI coworkers</span>
-            </span>
-          )}
+      {/* workspace label + collapse */}
+      <div className={cn('flex items-center border-b border-line p-3', collapsed ? 'justify-center' : 'justify-between')}>
+        {!collapsed && <p className="eyebrow">Workspace</p>}
+        <button onClick={onToggle} className="grid h-8 w-8 place-items-center rounded-lg text-white/50 transition-colors hover:bg-ink-700 hover:text-white/80" title={collapsed ? 'Expand' : 'Collapse'}>
+          {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
         </button>
-        {!collapsed && (
-          <button onClick={onToggle} className="ml-auto grid h-7 w-7 place-items-center rounded-lg text-white/40 transition-colors hover:bg-ink-700 hover:text-white/80" title="Collapse">
-            <PanelLeftClose size={16} />
-          </button>
-        )}
       </div>
-
-      {collapsed && (
-        <button onClick={onToggle} className="mx-auto mt-2 grid h-8 w-8 place-items-center rounded-lg text-white/40 transition-colors hover:bg-ink-700 hover:text-white/80" title="Expand">
-          <PanelLeft size={16} />
-        </button>
-      )}
 
       {/* modes */}
       <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2">

@@ -15,10 +15,8 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1200px 800px at 50% -20%, rgba(255, 255, 255, 0.03), transparent 60%),
-    #0a0b10;
-  color: #ece8de;
+  background: #07080b;
+  color: #eef0f2;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
