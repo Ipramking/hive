@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Cpu } from 'lucide-react'
+import { Cpu } from './icons'
 import { useHive } from '../store'
 import { brainForIndex } from '../engine/brains'
 import type { Agent } from '../types'

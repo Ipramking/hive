@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Menu, Hexagon, Zap, Sparkles, Cpu } from 'lucide-react'
+import { Menu, Hexagon, Zap, Sparkles, Cpu } from './icons'
 import { useHive } from '../store'
 import { roster } from '../engine/brains'
 import { alpha } from '../lib/color'

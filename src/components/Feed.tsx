@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, FileText, Sparkles, Radio } from 'lucide-react'
+import { ArrowRight, FileText, Sparkles, Radio } from './icons'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { cn } from '../lib/cn'

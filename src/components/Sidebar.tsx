@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { PanelLeftClose, PanelLeft, Plus, History, Settings, Pencil } from 'lucide-react'
+import { PanelLeftClose, PanelLeft, Plus, History, Settings, Pencil } from './icons'
 import { useHive } from '../store'
 import { alpha } from '../lib/color'
 import { cn } from '../lib/cn'

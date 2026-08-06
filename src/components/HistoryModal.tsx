@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Download, Trash2, Clock, ChevronDown } from 'lucide-react'
+import { Download, Trash2, Clock, ChevronDown } from './icons'
 import { Modal } from './Modal'
 import { useHive } from '../store'
 import { downloadRun } from '../lib/exportRun'

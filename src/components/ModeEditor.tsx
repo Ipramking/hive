@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Plus, Trash2, Users, ListChecks } from 'lucide-react'
+import { Plus, Trash2, Users, ListChecks } from './icons'
 import { Modal } from './Modal'
 import { useHive } from '../store'
 import type { Agent, ModeConfig, Stage } from '../types'

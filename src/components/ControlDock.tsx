@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal } from 'lucide-react'
+import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal } from './icons'
 import { motion } from 'framer-motion'
 import { useHive } from '../store'
 import { Feed } from './Feed'

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Cpu, Globe, Users, GitBranch, Trash2, KeyRound, ExternalLink, Check } from 'lucide-react'
+import { Cpu, Globe, Users, GitBranch, Trash2, KeyRound, ExternalLink, Check } from './icons'
 import { useHive } from '../store'
 import { roster } from '../engine/brains'
 import { cn } from '../lib/cn'

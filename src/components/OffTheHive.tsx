@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, ClipboardCopy, Download, FileText, FileCode2, FileDown, FolderDown, Globe, X } from 'lucide-react'
+import { Check, ClipboardCopy, Download, FileText, FileCode2, FileDown, FolderDown, Globe, X } from './icons'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { downloadProject } from '../lib/exportProject'
