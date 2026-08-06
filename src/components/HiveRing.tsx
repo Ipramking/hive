@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Cpu } from './icons'
+import { Cpu, agentIconOf, modeIconOf } from './icons'
 import { useHive } from '../store'
 import { brainForIndex } from '../engine/brains'
 import type { Agent } from '../types'
@@ -127,7 +127,10 @@ export function HiveRing() {
               animate={running ? { scale: [1, 1.06, 1] } : {}}
               transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <span className="text-2xl">{mode.emoji}</span>
+              {(() => {
+                const ModeI = modeIconOf(mode)
+                return <ModeI size={22} strokeWidth={1.75} style={{ color: mode.accent }} />
+              })()}
             </motion.div>
             <span className="mt-1.5 font-mono text-[8px] uppercase tracking-[0.2em] text-white/40">The Hive</span>
             {n === 0 && (
@@ -201,6 +204,7 @@ function Stat({ value, label, accent }: { value: number | string; label: string;
 
 function HexNode({ agent, active, done, selected }: { agent: Agent; active: boolean; done: boolean; selected: boolean }) {
   const size = 'clamp(46px, 8.5vw, 70px)'
+  const Icon = agentIconOf(agent)
   return (
     <div className="flex flex-col items-center gap-1.5">
       <div className="relative" style={{ width: size, height: size }}>
@@ -215,7 +219,7 @@ function HexNode({ agent, active, done, selected }: { agent: Agent; active: bool
         <div className="absolute" style={{ inset: 2, clipPath: HEX, background: '#12141d' }} />
         {/* icon */}
         <div className="absolute inset-0 grid place-items-center">
-          <span style={{ fontSize: 'clamp(18px, 3vw, 26px)' }}>{agent.emoji}</span>
+          <Icon size={22} strokeWidth={1.75} style={{ color: agent.color }} />
         </div>
         {/* pulsing overlay while working */}
         {active && (
@@ -246,7 +250,10 @@ function ProfileBody({ agent, index, status }: { agent: Agent; index: number; st
   return (
     <div className="flex items-start gap-3">
       <div className="grid h-11 w-11 shrink-0 place-items-center" style={{ clipPath: HEX, background: `${agent.color}22`, boxShadow: `inset 0 0 0 1px ${agent.color}66` }}>
-        <span className="text-xl">{agent.emoji}</span>
+        {(() => {
+          const I = agentIconOf(agent)
+          return <I size={18} strokeWidth={1.75} style={{ color: agent.color }} />
+        })()}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

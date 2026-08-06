@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { PanelLeftClose, PanelLeft, Plus, History, Settings, Pencil } from './icons'
+import { PanelLeftClose, PanelLeft, Plus, History, Settings, Pencil, modeIconOf } from './icons'
 import { useHive } from '../store'
 import { alpha } from '../lib/color'
 import { cn } from '../lib/cn'
@@ -66,7 +66,12 @@ export function Sidebar({ collapsed, onToggle, view, onNewMode, onEditMode, onHi
                   style={{ background: alpha(m.accent, 0.16), border: `1px solid ${alpha(m.accent, 0.45)}` }}
                 />
               )}
-              <span className="grid h-6 w-6 shrink-0 place-items-center text-base">{m.emoji}</span>
+              <span className="grid h-6 w-6 shrink-0 place-items-center">
+                {(() => {
+                  const I = modeIconOf(m)
+                  return <I size={16} strokeWidth={1.9} style={{ color: on ? m.accent : 'currentColor' }} />
+                })()}
+              </span>
               {!collapsed && <span className="truncate font-medium">{m.name}</span>}
               {!collapsed && !m.builtIn && <span className="ml-auto font-mono text-[8px] uppercase tracking-wider text-white/30">custom</span>}
             </button>

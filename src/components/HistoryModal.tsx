@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Download, Trash2, Clock, ChevronDown } from './icons'
+import { Download, Trash2, Clock, ChevronDown, modeIconById } from './icons'
 import { Modal } from './Modal'
 import { useHive } from '../store'
 import { downloadRun } from '../lib/exportRun'
@@ -68,10 +68,13 @@ function HistoryRow({ r }: { r: RunRecord }) {
       <div className="flex items-center gap-2 p-2.5">
         <button onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <span
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
             style={{ background: alpha(r.accent, 0.18), boxShadow: `inset 0 0 0 1px ${alpha(r.accent, 0.4)}` }}
           >
-            {r.modeEmoji}
+            {(() => {
+              const I = modeIconById(r.modeId)
+              return <I size={15} strokeWidth={1.9} style={{ color: r.accent }} />
+            })()}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{r.task || '(untitled run)'}</p>

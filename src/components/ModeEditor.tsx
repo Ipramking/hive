@@ -258,7 +258,7 @@ export function ModeEditor({
               >
                 {draft.agents.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.emoji} {a.name || 'Agent'}
+                    {a.name || 'Agent'}
                   </option>
                 ))}
               </select>

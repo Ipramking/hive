@@ -93,7 +93,7 @@ export function SettingsPage() {
         {/* Organization */}
         <Section title="Organization" desc="How the room works together. These shape behaviour — they don't slow the room down.">
           <div className="space-y-2.5">
-            <Row label="Working at once" hint="How many coworkers collaborate in parallel each round.">
+            <Row label="Max working at once" hint="Upper limit — the lead activates only who's needed, up to this.">
               <Stepper value={org.concurrency} min={2} max={6} onChange={(v) => setOrg({ concurrency: v })} />
             </Row>
             <Row label="Rounds" hint="How long the session can run before it wraps.">

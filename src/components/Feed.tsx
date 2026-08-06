@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowRight, FileText, Sparkles, Radio } from './icons'
+import { ArrowRight, FileText, Sparkles, Radio, Circle, agentIconOf } from './icons'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { cn } from '../lib/cn'
-import type { FeedMessage, ModeConfig, Stance } from '../types'
+import type { Agent, FeedMessage, ModeConfig, Stance } from '../types'
 
 const HEX = 'polygon(50% 1%, 93% 25%, 93% 75%, 50% 99%, 7% 75%, 7% 25%)'
 
@@ -20,12 +20,16 @@ function StanceChip({ stance }: { stance: Stance }) {
   return <span className={`rounded-full border px-1.5 py-px font-mono text-[8.5px] uppercase tracking-wider ${s.cls}`}>{s.label}</span>
 }
 
-function HexAvatar({ emoji, color, size = 32 }: { emoji?: string; color?: string; size?: number }) {
+function HexAvatar({ agent, size = 32 }: { agent?: Agent; size?: number }) {
+  const color = agent?.color ?? '#8891a5'
+  const Icon = agent ? agentIconOf(agent) : Circle
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <div className="absolute inset-0" style={{ clipPath: HEX, background: `${color}66` }} />
-      <div className="absolute" style={{ inset: 1.5, clipPath: HEX, background: '#12141d' }} />
-      <div className="absolute inset-0 grid place-items-center" style={{ fontSize: size * 0.5 }}>{emoji}</div>
+      <div className="absolute" style={{ inset: 1.5, clipPath: HEX, background: '#0f1219' }} />
+      <div className="absolute inset-0 grid place-items-center">
+        <Icon size={Math.round(size * 0.46)} strokeWidth={1.9} style={{ color }} />
+      </div>
     </div>
   )
 }
@@ -75,7 +79,7 @@ function TypingRow({ agents }: { agents: ModeConfig['agents'] }) {
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2.5">
       <div className="flex -space-x-2">
         {shown.map((a) => (
-          <HexAvatar key={a.id} emoji={a.emoji} color={a.color} size={26} />
+          <HexAvatar key={a.id} agent={a} size={26} />
         ))}
       </div>
       <div className="flex items-center gap-1.5 rounded-full border border-line bg-ink-800/50 px-3 py-1.5">
@@ -161,7 +165,7 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-2.5">
       <motion.div initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 20 }} className="mt-0.5">
-        <HexAvatar emoji={agent?.emoji} color={agent?.color} size={32} />
+        <HexAvatar agent={agent} size={32} />
       </motion.div>
       <div
         className={cn(

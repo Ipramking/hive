@@ -37,7 +37,7 @@ ${hasIntel ? 'Live web intel has been shared in the room.\n' : ''}Deliverables p
 Recent room activity:
 ${transcript || '(the session just started)'}
 
-This is round ${round} of at most ${maxRounds}. Put ${maxActivate} coworkers to work IN PARALLEL this round — give each a specific instruction that builds on the discussion.${debate ? ' If teammates disagree in the transcript, name the disagreement in your note and push the room to a clear decision this round.' : ''} Set done=true only when the task is genuinely handled and the key deliverables exist.
+This is round ${round} of at most ${maxRounds}. Put ONLY the coworkers who can meaningfully move it forward right now to work — as few as one, up to ${maxActivate}, running in parallel. Don't activate someone just to keep them busy; the right people, not everyone.${debate ? ' If teammates disagree in the transcript, name the disagreement in your note and push the room to a clear decision this round.' : ''} Set done=true only when the task is genuinely handled and the key deliverables exist.
 
 Respond with ONLY JSON:
 {

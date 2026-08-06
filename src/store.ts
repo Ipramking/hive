@@ -426,15 +426,8 @@ export const useHive = create<HiveState>((set, get) => ({
         }
       }
 
-      // collaboration: top up so `concurrency` coworkers work at once, not just the ones the lead named
-      if (!plan.done && plan.activate.length < maxActivate) {
-        const busy = new Set(plan.activate.map((a) => a.agentId))
-        for (const a of mode.agents) {
-          if (plan.activate.length >= maxActivate) break
-          if (busy.has(a.id)) continue
-          plan.activate.push({ agentId: a.id, instruction: 'Jump in — react to the room, push your angle, and ship your piece.' })
-        }
-      }
+      // smart activation: the lead picks only the coworkers who can move it forward
+      // this round (1..maxActivate). We deliberately do NOT force everyone to work.
 
       set((s) => ({ feed: push(s.feed, { kind: 'manager', text: plan.note }) }))
       line(`Lead: ${plan.note}`)

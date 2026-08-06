@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Menu, Hexagon, Zap, Sparkles, Cpu } from './icons'
+import { Menu, Hexagon, Zap, Sparkles, Cpu, modeIconOf } from './icons'
 import { useHive } from '../store'
 import { roster } from '../engine/brains'
 import { alpha } from '../lib/color'
@@ -37,8 +37,12 @@ export function TopHeader({ onMenu }: { onMenu: () => void }) {
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
-        <span className="hidden items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-white/60 sm:flex">
-          {mode.emoji} {mode.name}
+        <span className="hidden items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-white/70 sm:flex">
+          {(() => {
+            const ModeI = modeIconOf(mode)
+            return <ModeI size={12} strokeWidth={1.9} style={{ color: mode.accent }} />
+          })()}
+          {mode.name}
         </span>
         <span className={cn('flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide', live ? 'border-emerald-500/40 text-emerald-300' : 'border-white/10 text-white/45')}>
           {live ? <Zap size={11} /> : <Sparkles size={11} />}
