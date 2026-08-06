@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Cpu, agentIconOf, modeIconOf } from './icons'
+import { Corners } from './Corners'
 import { useHive } from '../store'
 import { brainForIndex } from '../engine/brains'
 import type { Agent } from '../types'
@@ -48,20 +49,32 @@ export function HiveRing() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between px-1 pb-2">
-        <div className="flex items-baseline gap-2">
-          <p className="font-display text-sm font-bold">Hive Map</p>
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/35">
-            {n} {n === 1 ? 'node' : 'nodes'} · {connections} connections
-          </p>
+      <div className="flex items-center justify-between px-1 pb-2.5">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            {running && <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: mode.accent }} />}
+            <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: running ? mode.accent : '#5b6472' }} />
+          </span>
+          <p className="eyebrow text-steel">Situation Display</p>
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-wider" style={{ color: running ? mode.accent : 'rgba(255,255,255,0.35)' }}>
-          {running ? `Round ${round} · ${activeCount} active` : runStatus === 'complete' ? 'Connected' : 'Idle'}
+        <p className="font-mono text-[10px] uppercase tracking-wider text-steel-dim">
+          {n} nodes · {connections} links ·{' '}
+          <span style={{ color: running ? mode.accent : runStatus === 'complete' ? '#4ade80' : '#5b6472' }}>
+            {running ? `round ${round} · ${activeCount} live` : runStatus === 'complete' ? 'connected' : 'standby'}
+          </span>
         </p>
       </div>
 
       <div className="relative grid flex-1 place-items-center">
-        <div className="relative aspect-square w-full max-w-[min(100%,560px)]">
+        <div
+          className="relative aspect-square w-full max-w-[min(100%,560px)]"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(150,170,210,0.10) 1px, transparent 1px)',
+            backgroundSize: '18px 18px',
+            backgroundPosition: 'center',
+          }}
+        >
+          <Corners size={16} color={`${mode.accent}66`} />
           <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full overflow-visible">
             <defs>
               <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
@@ -195,8 +208,8 @@ export function HiveRing() {
 
 function Stat({ value, label, accent }: { value: number | string; label: string; accent?: string }) {
   return (
-    <div className="rounded-xl border border-line bg-ink-850/50 px-2 py-1.5 text-center">
-      <p className="font-display text-base font-extrabold leading-none" style={accent ? { color: accent } : undefined}>{value}</p>
+    <div className="inset px-2.5 py-1.5">
+      <p className="telemetry-v" style={{ color: accent ?? '#e7ecf3' }}>{value}</p>
       <p className="eyebrow mt-1">{label}</p>
     </div>
   )

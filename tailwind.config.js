@@ -9,16 +9,21 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // deep-space hive chrome — cooler, darker, more contrast
+        // mission-deck chrome — cool blue-black steel
         ink: {
-          950: '#07080b',
-          900: '#0b0d12',
-          850: '#101319',
-          800: '#151922',
-          700: '#1f2430',
-          600: '#2b3040',
+          950: '#060709',
+          900: '#090b11',
+          850: '#0e1118',
+          800: '#12151d',
+          700: '#1b1f29',
+          600: '#262b37',
         },
-        line: 'rgba(255,255,255,0.08)',
+        line: 'rgba(150,170,210,0.12)',
+        steel: {
+          DEFAULT: '#8b95a7',
+          bright: '#e7ecf3',
+          dim: '#5b6472',
+        },
         // "paper" — where deliverables land
         paper: {
           DEFAULT: '#f2ede1',

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal } from './icons'
+import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal, modeIconOf } from './icons'
 import { motion } from 'framer-motion'
 import { useHive } from '../store'
 import { Feed } from './Feed'
@@ -37,9 +37,15 @@ export function ControlDock() {
   return (
     <section className="card flex h-full min-h-0 flex-col overflow-hidden">
       <div className="border-b border-line p-4">
-        <p className="eyebrow">User input</p>
-        <p className="mt-1 font-display text-base font-bold">{mode.name}</p>
-        <p className="mt-0.5 text-xs text-white/45">
+        <p className="eyebrow">Command</p>
+        <div className="mt-1.5 flex items-center gap-2">
+          {(() => {
+            const ModeI = modeIconOf(mode)
+            return <ModeI size={16} strokeWidth={1.9} style={{ color: accent }} />
+          })()}
+          <p className="font-display text-base font-bold">{mode.name}</p>
+        </div>
+        <p className="mt-1 text-xs text-steel">
           {floor ? 'Everyone works at once — talking, handing off, shipping.' : mode.tagline}
         </p>
 
@@ -80,35 +86,38 @@ export function ControlDock() {
           </button>
         </div>
 
-        <textarea
-          value={task}
-          onChange={(e) => setTask(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !running && task.trim()) {
-              e.preventDefault()
-              launch()
-            }
-          }}
-          disabled={running}
-          rows={2}
-          placeholder={floor ? 'What should the room go work on?' : 'What should the org go do?'}
-          className="mt-3 w-full resize-none rounded-xl border border-line bg-ink-900/70 px-3.5 py-2.5 text-sm text-white/90 outline-none transition-colors placeholder:text-white/30 focus:border-white/25 disabled:opacity-60"
-        />
+        <div className="inset mt-3 flex items-start gap-2 px-3 py-2.5 transition-colors focus-within:border-[color:var(--accent)]">
+          <span className="mt-px font-mono text-sm leading-6" style={{ color: accent }}>▸</span>
+          <textarea
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !running && task.trim()) {
+                e.preventDefault()
+                launch()
+              }
+            }}
+            disabled={running}
+            rows={2}
+            placeholder="what should the room build?"
+            className="min-w-0 flex-1 resize-none bg-transparent text-sm leading-6 text-steel-bright outline-none placeholder:text-steel-dim disabled:opacity-60"
+          />
+        </div>
 
         {runStatus === 'complete' || running ? (
-          <button onClick={reset} disabled={running} className="btn-soft mt-2 w-full">
+          <button onClick={reset} disabled={running} className="btn-soft mt-2 w-full font-mono uppercase tracking-wide">
             {running ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
-            {running ? (floor ? `Working · round ${round}` : 'Running…') : 'Clear the floor'}
+            {running ? `Executing · round ${round}` : 'Reset deck'}
           </button>
         ) : (
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={launch}
             disabled={!task.trim()}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ background: accent, boxShadow: `0 0 24px ${alpha(accent, 0.4)}` }}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-mono text-sm font-semibold uppercase tracking-wide text-black transition-all disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: accent, boxShadow: `0 0 26px ${alpha(accent, 0.45)}` }}
           >
-            <Play size={15} /> {floor ? 'Open the floor' : 'Run the org'}
+            <Play size={15} /> Execute
           </motion.button>
         )}
 
@@ -124,9 +133,9 @@ export function ControlDock() {
       </div>
 
       <div className="flex items-center justify-between border-b border-line px-4 py-2">
-        <p className="eyebrow">Channel</p>
+        <p className="eyebrow">Ops Log</p>
         {running && (
-          <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-white/45">
+          <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-steel">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: accent }} />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
@@ -156,13 +165,14 @@ function ChatInput({ accent }: { accent: string }) {
   }
   return (
     <div className="border-t border-line p-2.5">
-      <div className="flex items-center gap-2 rounded-xl border border-line bg-ink-900/70 px-3 focus-within:border-white/25">
+      <div className="inset flex items-center gap-2 px-3 transition-colors focus-within:border-[color:var(--accent)]">
+        <span className="font-mono text-sm" style={{ color: accent }}>›</span>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder={running ? 'Say something to the room…' : 'Start a run, then chat to steer it'}
-          className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-white/90 outline-none placeholder:text-white/30"
+          placeholder={running ? 'transmit to the room…' : 'run first, then steer it live'}
+          className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-steel-bright outline-none placeholder:text-steel-dim"
         />
         <button
           onClick={send}

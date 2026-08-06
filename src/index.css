@@ -15,8 +15,8 @@ body,
 
 body {
   margin: 0;
-  background: #07080b;
-  color: #eef0f2;
+  background: #060709;
+  color: #e7ecf3;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -57,19 +57,33 @@ body {
 }
 
 @layer components {
-  /* elevated glass surface — subtle top highlight + soft drop for real depth */
+  /* mission-deck panel — cool glass over a control surface, hairline-lit top edge */
   .card {
-    @apply rounded-2xl border border-line bg-ink-850/60 backdrop-blur-md;
+    @apply rounded-xl border border-line;
+    background:
+      linear-gradient(180deg, rgba(150, 170, 210, 0.04), rgba(150, 170, 210, 0) 120px),
+      rgba(14, 17, 24, 0.72);
+    backdrop-filter: blur(12px);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      0 12px 34px -20px rgba(0, 0, 0, 0.7);
+      inset 0 1px 0 rgba(150, 170, 210, 0.07),
+      0 18px 40px -24px rgba(0, 0, 0, 0.85);
+  }
+  /* inset data surface — where telemetry/inputs sit, recessed */
+  .inset {
+    @apply rounded-lg border border-line;
+    background: rgba(6, 7, 9, 0.6);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-[10px] uppercase tracking-wide;
   }
-  /* mono uppercase micro-label — the "machine" voice */
+  /* mono uppercase micro-label — the console voice */
   .eyebrow {
-    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-white/50;
+    @apply font-mono text-[10px] uppercase tracking-[0.2em] text-steel-dim;
+  }
+  /* a telemetry readout: mono value + tiny label */
+  .telemetry-v {
+    @apply font-mono text-base font-semibold tabular-nums leading-none;
   }
   /* consistent buttons */
   .btn-primary {
