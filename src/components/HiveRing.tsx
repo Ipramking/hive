@@ -75,6 +75,21 @@ export function HiveRing() {
           }}
         >
           <Corners size={16} color={`${mode.accent}66`} />
+
+          {/* CRT scanlines */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(150,170,210,1) 0 1px, transparent 1px 4px)' }}
+          />
+          {/* radar sweep while executing */}
+          {running && (
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              style={{ background: `conic-gradient(from 0deg, ${mode.accent}00 0deg, ${mode.accent}1f 42deg, ${mode.accent}00 64deg)` }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+            />
+          )}
           <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full overflow-visible">
             <defs>
               <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">

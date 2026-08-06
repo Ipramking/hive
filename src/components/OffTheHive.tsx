@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check, ClipboardCopy, Download, FileText, FileCode2, FileDown, FolderDown, Globe, X } from './icons'
+import { Check, ClipboardCopy, Download, FileText, FileCode2, FileDown, FolderDown, Globe, Eye, X } from './icons'
 import { useHive } from '../store'
 import { agentIn } from '../data/modes'
 import { downloadProject } from '../lib/exportProject'
 import { downloadPdf } from '../lib/exportPdf'
+import { buildPreviewDoc, hasViewableSite } from '../lib/preview'
+import { PreviewModal } from './PreviewModal'
 import type { Artifact } from '../types'
 
 export function OffTheHive() {
@@ -14,8 +16,10 @@ export function OffTheHive() {
   const currentRun = useHive((s) => s.currentRun)
   const lastRanTask = useHive((s) => s.lastRanTask)
   const [open, setOpen] = useState<Artifact | null>(null)
+  const [previewDoc, setPreviewDoc] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const codeCount = artifacts.filter((a) => a.kind === 'code').length
+  const canPreview = hasViewableSite(artifacts)
 
   const copyAll = async () => {
     try {
@@ -81,11 +85,21 @@ export function OffTheHive() {
 
       {artifacts.length > 0 && (
         <div className="flex shrink-0 items-center gap-1.5">
+          {canPreview && (
+            <button
+              onClick={() => setPreviewDoc(buildPreviewDoc(artifacts))}
+              title="View the site the hive built"
+              className="flex h-9 items-center gap-1.5 rounded-lg px-3 font-mono text-xs font-semibold uppercase tracking-wide text-black transition-all hover:brightness-110"
+              style={{ background: mode.accent, boxShadow: `0 0 20px ${mode.accent}55` }}
+            >
+              <Eye size={14} /> Preview
+            </button>
+          )}
           {codeCount > 0 && (
             <button
               onClick={() => downloadProject(currentRun())}
               title="Download the whole project as a .zip"
-              className="flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors"
+              className="flex h-9 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-xs font-semibold uppercase tracking-wide transition-colors"
               style={{ borderColor: `${mode.accent}66`, color: mode.accent }}
             >
               <FolderDown size={14} /> Project
@@ -106,6 +120,11 @@ export function OffTheHive() {
       {/* reader */}
       <AnimatePresence>
         {open && <Reader artifact={open} onClose={() => setOpen(null)} />}
+      </AnimatePresence>
+
+      {/* live site preview */}
+      <AnimatePresence>
+        {previewDoc && <PreviewModal srcDoc={previewDoc} accent={mode.accent} onClose={() => setPreviewDoc(null)} />}
       </AnimatePresence>
     </div>
   )

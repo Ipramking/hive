@@ -38,6 +38,7 @@ export {
   X,
   ListChecks,
   Circle,
+  Eye,
 } from 'lucide-react'
 
 import {
