@@ -11,6 +11,7 @@ import { HistoryModal } from './components/HistoryModal'
 import { HiveBackdrop } from './components/HiveBackdrop'
 import { useHive } from './store'
 import { useAuth } from './lib/auth'
+import { enter } from './lib/anim'
 import type { ModeConfig } from './types'
 
 export default function App() {
@@ -20,6 +21,10 @@ export default function App() {
   useEffect(() => {
     authInit()
   }, [authInit])
+  // staggered reveal of the shell on first paint
+  useEffect(() => {
+    enter('[data-enter]', { from: 90, y: 18 })
+  }, [])
   const [collapsed, setCollapsed] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
   const [view, setView] = useState<'floor' | 'settings'>('floor')
@@ -47,16 +52,18 @@ export default function App() {
 
   return (
     <div
-      className="mx-auto flex h-full max-w-[1640px] flex-col gap-3 p-3 sm:p-4"
+      className="mx-auto flex h-[100dvh] max-w-[1640px] flex-col gap-3 overflow-y-auto p-3 sm:p-4 lg:overflow-hidden"
       style={{ '--accent': mode.accent } as CSSProperties}
     >
       <HiveBackdrop accent={mode.accent} active={running} />
 
-      <TopHeader onMenu={() => setMobileNav(true)} />
+      <div data-enter>
+        <TopHeader onMenu={() => setMobileNav(true)} />
+      </div>
 
       <div className="flex min-h-0 flex-1 gap-3">
         {/* desktop sidebar */}
-        <div className="hidden h-full lg:block">
+        <div data-enter className="hidden h-full lg:block">
           <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} {...sidebarProps} />
         </div>
 
@@ -83,12 +90,14 @@ export default function App() {
             <SettingsPage />
           ) : (
             <>
-              <OffTheHive />
-              <div className="flex min-h-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
-                <div className="card min-h-[46vh] p-4 lg:min-h-0">
+              <div data-enter>
+                <OffTheHive />
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:[grid-template-rows:minmax(0,1fr)]">
+                <div data-enter className="card flex min-h-[46vh] flex-col overflow-hidden p-4 lg:min-h-0">
                   <HiveRing />
                 </div>
-                <div className="min-h-0 flex-1 lg:flex-none">
+                <div data-enter className="min-h-0 flex-1 lg:flex-none">
                   <ControlDock />
                 </div>
               </div>

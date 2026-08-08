@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Cpu, agentIconOf, modeIconOf } from './icons'
 import { Corners } from './Corners'
+import { AmbientHive } from './AmbientHive'
+import { countUp } from '../lib/anim'
 import { useHive } from '../store'
 import { brainForIndex } from '../engine/brains'
 import type { Agent } from '../types'
@@ -65,9 +67,9 @@ export function HiveRing() {
         </p>
       </div>
 
-      <div className="relative grid flex-1 place-items-center">
+      <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden">
         <div
-          className="relative aspect-square w-full max-w-[min(100%,560px)]"
+          className="relative aspect-square max-h-full w-[min(100%,540px)] max-w-full"
           style={{
             backgroundImage: 'radial-gradient(rgba(150,170,210,0.10) 1px, transparent 1px)',
             backgroundSize: '18px 18px',
@@ -147,20 +149,25 @@ export function HiveRing() {
             </AnimatePresence>
           </svg>
 
+          {/* idle: the living ambient hive (anime.js) */}
+          {n === 0 && <AmbientHive accent={mode.accent} />}
+
           {/* the core — the hive's heart */}
-          <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-            <motion.div
-              className="grid h-[56px] w-[56px] place-items-center"
-              style={{ clipPath: HEX, background: `${mode.accent}1c`, boxShadow: `inset 0 0 0 1px ${mode.accent}55` }}
-              animate={running ? { scale: [1, 1.06, 1] } : {}}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              {(() => {
-                const ModeI = modeIconOf(mode)
-                return <ModeI size={22} strokeWidth={1.75} style={{ color: mode.accent }} />
-              })()}
-            </motion.div>
-            <span className="mt-1.5 font-mono text-[8px] uppercase tracking-[0.2em] text-white/40">The Hive</span>
+          <div className={`absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center ${n === 0 ? 'top-[66%]' : 'top-1/2'}`}>
+            {n > 0 && (
+              <motion.div
+                className="grid h-[56px] w-[56px] place-items-center"
+                style={{ clipPath: HEX, background: `${mode.accent}1c`, boxShadow: `inset 0 0 0 1px ${mode.accent}55` }}
+                animate={running ? { scale: [1, 1.06, 1] } : {}}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                {(() => {
+                  const ModeI = modeIconOf(mode)
+                  return <ModeI size={22} strokeWidth={1.75} style={{ color: mode.accent }} />
+                })()}
+              </motion.div>
+            )}
+            <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-white/40">The Hive</span>
             {n === 0 && (
               <p className="mt-2 max-w-[220px] text-center text-xs leading-relaxed text-white/45">
                 {running ? 'Assembling the team…' : 'Type a task — the hive assembles the right team for it.'}
@@ -222,9 +229,17 @@ export function HiveRing() {
 }
 
 function Stat({ value, label, accent }: { value: number | string; label: string; accent?: string }) {
+  const ref = useRef<HTMLParagraphElement | null>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const m = String(value).match(/^(\d+)(\D*)$/)
+    if (m) countUp(el, parseInt(m[1], 10), m[2])
+    else el.textContent = String(value)
+  }, [value])
   return (
     <div className="inset px-2.5 py-1.5">
-      <p className="telemetry-v" style={{ color: accent ?? '#e7ecf3' }}>{value}</p>
+      <p ref={ref} className="telemetry-v" style={{ color: accent ?? '#e7ecf3' }}>{value}</p>
       <p className="eyebrow mt-1">{label}</p>
     </div>
   )
