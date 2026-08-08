@@ -55,13 +55,13 @@ export function HiveRing() {
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             {running && <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: mode.accent }} />}
-            <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: running ? mode.accent : '#5b6472' }} />
+            <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: running ? mode.accent : '#63678f' }} />
           </span>
           <p className="eyebrow text-steel">Situation Display</p>
         </div>
         <p className="font-mono text-[10px] uppercase tracking-wider text-steel-dim">
           {n} nodes · {connections} links ·{' '}
-          <span style={{ color: running ? mode.accent : runStatus === 'complete' ? '#4ade80' : '#5b6472' }}>
+          <span style={{ color: running || runStatus === 'complete' ? mode.accent : '#63678f' }}>
             {running ? `round ${round} · ${activeCount} live` : runStatus === 'complete' ? 'connected' : 'standby'}
           </span>
         </p>
@@ -71,7 +71,7 @@ export function HiveRing() {
         <div
           className="relative aspect-square max-h-full w-[min(100%,540px)] max-w-full"
           style={{
-            backgroundImage: 'radial-gradient(rgba(150,170,210,0.10) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(rgba(160,162,240,0.10) 1px, transparent 1px)',
             backgroundSize: '18px 18px',
             backgroundPosition: 'center',
           }}
@@ -81,7 +81,7 @@ export function HiveRing() {
           {/* CRT scanlines */}
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(150,170,210,1) 0 1px, transparent 1px 4px)' }}
+            style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(160,162,240,1) 0 1px, transparent 1px 4px)' }}
           />
           {/* radar sweep while executing */}
           {running && (
@@ -239,7 +239,7 @@ function Stat({ value, label, accent }: { value: number | string; label: string;
   }, [value])
   return (
     <div className="inset px-2.5 py-1.5">
-      <p ref={ref} className="telemetry-v" style={{ color: accent ?? '#e7ecf3' }}>{value}</p>
+      <p ref={ref} className="telemetry-v" style={{ color: accent ?? '#eef0fb' }}>{value}</p>
       <p className="eyebrow mt-1">{label}</p>
     </div>
   )
@@ -259,7 +259,7 @@ function HexNode({ agent, active, done, selected }: { agent: Agent; active: bool
           transition={{ duration: 1.4, repeat: active ? Infinity : 0, ease: 'easeInOut' }}
         />
         {/* inner hex = dark fill */}
-        <div className="absolute" style={{ inset: 2, clipPath: HEX, background: '#12141d' }} />
+        <div className="absolute" style={{ inset: 2, clipPath: HEX, background: '#12122a' }} />
         {/* icon */}
         <div className="absolute inset-0 grid place-items-center">
           <Icon size={22} strokeWidth={1.75} style={{ color: agent.color }} />
@@ -274,7 +274,7 @@ function HexNode({ agent, active, done, selected }: { agent: Agent; active: bool
           />
         )}
         {done && (
-          <span className="absolute -bottom-1 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-emerald-400 text-[9px] font-bold text-ink-950">✓</span>
+          <span className="absolute -bottom-1 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent text-[9px] font-bold text-white">✓</span>
         )}
       </div>
       <div className="flex flex-col items-center leading-none">
@@ -304,7 +304,7 @@ function ProfileBody({ agent, index, status }: { agent: Agent; index: number; st
           {agent.tag && (
             <span className="rounded-full px-1.5 py-px font-mono text-[8.5px] uppercase tracking-wider" style={{ background: `${agent.color}18`, color: agent.color }}>{agent.tag}</span>
           )}
-          <span className="ml-auto flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-wider" style={{ color: status === 'done' ? '#4ade80' : status !== 'idle' ? agent.color : 'rgba(255,255,255,0.4)' }}>
+          <span className="ml-auto flex items-center gap-1 font-mono text-[8.5px] uppercase tracking-wider" style={{ color: status === 'done' ? '#8f82ff' : status !== 'idle' ? agent.color : 'rgba(255,255,255,0.4)' }}>
             {statusText[status]}
           </span>
         </div>

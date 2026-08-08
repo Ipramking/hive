@@ -5,7 +5,7 @@ import { useHive } from '../store'
 import type { Agent, ModeConfig, Stage } from '../types'
 import { alpha } from '../lib/color'
 
-const ACCENTS = ['#6d7cff', '#ff7a45', '#3fd0c9', '#ff7ab6', '#f5c451', '#8b5cf6', '#22c55e', '#ef4444']
+const ACCENTS = ['#6d5bff', '#8f82ff', '#4aa8ff', '#8b5cf6', '#a78bfa', '#ff7ab6', '#f5c451', '#ef4444']
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 8)}`
 
 function blankAgent(color: string): Agent {

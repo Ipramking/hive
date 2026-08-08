@@ -170,7 +170,7 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
       <div
         className={cn(
           'min-w-0 flex-1 rounded-xl border px-3 py-2',
-          isArtifact ? 'border-emerald-500/30 bg-emerald-500/[0.07]' : 'border-line bg-ink-800/40',
+          isArtifact ? 'border-accent/30 bg-accent/[0.08]' : 'border-line bg-ink-800/40',
         )}
       >
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -196,12 +196,12 @@ function Row({ m, mode }: { m: FeedMessage; mode: ModeConfig }) {
           )}
 
           {isArtifact && (
-            <span className="ml-auto flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-emerald-400">
+            <span className="ml-auto flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-accent-soft">
               <FileText size={11} /> shipped
             </span>
           )}
         </div>
-        <p className={cn('mt-0.5 text-[13px] leading-relaxed', isArtifact ? 'text-emerald-100/90' : 'text-white/80')}>
+        <p className={cn('mt-0.5 text-[13px] leading-relaxed', isArtifact ? 'text-white/90' : 'text-white/80')}>
           {m.text}
         </p>
       </div>

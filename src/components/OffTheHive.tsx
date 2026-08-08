@@ -106,7 +106,7 @@ export function OffTheHive() {
             </button>
           )}
           <button onClick={copyAll} title="Copy all as Markdown" className="btn-icon">
-            {copied ? <Check size={15} className="text-emerald-400" /> : <ClipboardCopy size={15} />}
+            {copied ? <Check size={15} className="text-accent-soft" /> : <ClipboardCopy size={15} />}
           </button>
           <button onClick={download} title="Download as Markdown (.md)" className="btn-icon">
             <Download size={15} />

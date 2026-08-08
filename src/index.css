@@ -15,15 +15,20 @@ body,
 
 body {
   margin: 0;
-  background: #060709;
-  color: #e7ecf3;
+  background:
+    radial-gradient(1200px 820px at 50% -12%, rgba(122, 108, 255, 0.6), transparent 56%),
+    radial-gradient(1000px 900px at 86% 8%, rgba(70, 96, 240, 0.4), transparent 58%),
+    radial-gradient(820px 820px at 6% 92%, rgba(108, 80, 240, 0.32), transparent 60%),
+    #0a0b1e;
+  background-attachment: fixed;
+  color: #eef0fb;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent, #22c55e) 40%, transparent);
+  background: color-mix(in srgb, var(--accent, #6d5bff) 40%, transparent);
   color: #fff;
 }
 
@@ -32,18 +37,18 @@ body {
   height: 7px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(236, 232, 222, 0.12);
+  background: rgba(160, 162, 240, 0.18);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(236, 232, 222, 0.24);
+  background: rgba(160, 162, 240, 0.34);
 }
 .paper ::-webkit-scrollbar-thumb {
   background: rgba(38, 34, 27, 0.2);
 }
 
 *:focus-visible {
-  outline: 2px solid var(--accent, #22c55e);
+  outline: 2px solid var(--accent, #6d5bff);
   outline-offset: 2px;
 }
 
@@ -57,25 +62,25 @@ body {
 }
 
 @layer components {
-  /* mission-deck panel — cool glass over a control surface, hairline-lit top edge */
+  /* nebula panel — indigo glass on the blue-violet gradient, hairline-lit top edge */
   .card {
-    @apply rounded-xl border border-line;
+    @apply rounded-2xl border border-line;
     background:
-      linear-gradient(180deg, rgba(150, 170, 210, 0.04), rgba(150, 170, 210, 0) 120px),
-      rgba(14, 17, 24, 0.72);
-    backdrop-filter: blur(12px);
+      linear-gradient(180deg, rgba(150, 150, 240, 0.06), rgba(150, 150, 240, 0) 140px),
+      rgba(16, 16, 40, 0.55);
+    backdrop-filter: blur(18px);
     box-shadow:
-      inset 0 1px 0 rgba(150, 170, 210, 0.07),
-      0 18px 40px -24px rgba(0, 0, 0, 0.85);
+      inset 0 1px 0 rgba(170, 170, 250, 0.09),
+      0 26px 54px -30px rgba(0, 0, 0, 0.9);
   }
   /* inset data surface — where telemetry/inputs sit, recessed */
   .inset {
-    @apply rounded-lg border border-line;
-    background: rgba(6, 7, 9, 0.6);
+    @apply rounded-xl border border-line;
+    background: rgba(8, 8, 20, 0.55);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 font-mono text-[10px] uppercase tracking-wide;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide;
   }
   /* mono uppercase micro-label — the console voice */
   .eyebrow {
@@ -85,16 +90,16 @@ body {
   .telemetry-v {
     @apply font-mono text-base font-semibold tabular-nums leading-none;
   }
-  /* consistent buttons */
+  /* consistent buttons — pill-shaped, premium */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-40;
   }
   .btn-soft {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-ink-700 hover:text-white disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line px-4 py-2.5 text-sm font-semibold text-white/75 transition-colors hover:bg-ink-700 hover:text-white disabled:opacity-50;
   }
-  /* icon button — 40px min touch target, quiet until hover */
+  /* icon button — circular, quiet until hover */
   .btn-icon {
-    @apply grid h-9 w-9 place-items-center rounded-xl border border-line text-white/60 transition-colors hover:bg-ink-700 hover:text-white;
+    @apply grid h-9 w-9 place-items-center rounded-full border border-line text-white/60 transition-colors hover:bg-ink-700 hover:text-white;
   }
   /* warm printout surface for finished deliverables */
   .paper {

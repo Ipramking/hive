@@ -1,9 +1,10 @@
 import type { Agent, ModeConfig } from '../types'
 
-// distinct, legible colours assigned to generated coworkers by index
-const PALETTE = ['#6d7cff', '#3fd0c9', '#ff7ab6', '#f5c451', '#8b96ff', '#ff9d6e', '#7ee787', '#c4b5fd']
+// distinct, legible colours assigned to generated coworkers by index — a
+// blue→violet family so any generated team stays on the nebula palette
+const PALETTE = ['#6d5bff', '#4aa8ff', '#a78bfa', '#8f82ff', '#5ec8ff', '#b39dff', '#7c9bff', '#9d8bff']
 const FALLBACK_EMOJI = ['🧭', '🔬', '🎨', '⚙️', '🛡️', '🚀', '📊', '✍️']
-const ACCENTS = ['#6d7cff', '#ff7a45', '#8b5cf6', '#10b981', '#f43f5e']
+const ACCENTS = ['#6d5bff', '#8b5cf6', '#4aa8ff', '#7c6cff', '#a78bfa']
 
 export function buildTeamPrompt(task: string): string {
   return `A person gave this task to an on-demand organisation of AI coworkers:

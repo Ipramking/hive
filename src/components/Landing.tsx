@@ -4,7 +4,7 @@ import { AuthScreen } from './AuthScreen'
 import { AmbientHive } from './AmbientHive'
 import { Hexagon, Users, Zap, FileCode2, ArrowRight, Globe } from './icons'
 
-const ACCENT = '#4fd2ff'
+const ACCENT = '#6d5bff'
 
 const FEATURES = [
   { Icon: Users, title: 'Assemble a team', body: 'Describe a task and the right coworkers show up — each with a role and a brain of their own.' },
@@ -21,7 +21,7 @@ export function Landing() {
       {/* atmosphere */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-1/2 top-[-10%] h-[520px] w-[520px] -translate-x-1/2 rounded-full opacity-40 blur-[120px]" style={{ background: `radial-gradient(circle, ${ACCENT}, transparent 70%)` }} />
-        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(rgba(150,170,210,0.5) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(rgba(160,162,240,0.5) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
       </div>
 
       <div className="mx-auto flex min-h-[100dvh] max-w-5xl flex-col px-5 py-6 sm:px-8">
@@ -72,8 +72,8 @@ export function Landing() {
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: 'easeOut', delay: 0.1 }}
-            className="relative mx-auto hidden aspect-square w-full max-w-[380px] rounded-2xl border border-line lg:block"
-            style={{ background: 'rgba(10,13,18,0.5)' }}
+            className="relative mx-auto hidden aspect-square w-full max-w-[400px] overflow-hidden rounded-3xl border border-line lg:block"
+            style={{ background: 'radial-gradient(circle at 50% 45%, rgba(109,91,255,0.22), rgba(8,8,22,0.6) 70%)', boxShadow: `0 40px 90px -40px ${ACCENT}88` }}
           >
             <AmbientHive accent={ACCENT} />
           </motion.div>

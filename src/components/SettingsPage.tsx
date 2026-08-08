@@ -44,7 +44,7 @@ export function SettingsPage() {
             <Stat icon={<Cpu size={14} />} label="Brains" value={String(brains.length)} />
             <Stat icon={<span className="text-xs">✦</span>} label="Gemini keys" value={String(gemini)} />
             <Stat icon={<span className="text-xs">◆</span>} label="Groq keys" value={String(groq)} />
-            <Stat icon={engineName === 'gemini' ? <span className="h-2 w-2 rounded-full bg-emerald-400" /> : <span className="h-2 w-2 rounded-full bg-white/30" />} label="Engine" value={engineName === 'gemini' ? 'Live' : 'Offline'} />
+            <Stat icon={engineName === 'gemini' ? <span className="h-2 w-2 rounded-full bg-accent" /> : <span className="h-2 w-2 rounded-full bg-white/30" />} label="Engine" value={engineName === 'gemini' ? 'Live' : 'Offline'} />
           </div>
           <p className="mt-3 text-xs leading-relaxed text-white/40">
             Keys live on the server and never reach your browser. To change the pool, set <code className="rounded bg-ink-800 px-1 py-0.5 font-mono text-[11px] text-white/60">GEMINI_API_KEY</code>, <code className="rounded bg-ink-800 px-1 py-0.5 font-mono text-[11px] text-white/60">GROQ_API_KEY</code> (and <code className="rounded bg-ink-800 px-1 py-0.5 font-mono text-[11px] text-white/60">VITE_BRAINS</code>) in your deployment.
@@ -65,7 +65,7 @@ export function SettingsPage() {
               />
             </div>
             <button onClick={saveKey} className="flex items-center gap-1.5 rounded-xl border border-line px-4 text-sm font-semibold text-white/80 transition-colors hover:bg-ink-700">
-              {saved ? <Check size={15} className="text-emerald-400" /> : null}
+              {saved ? <Check size={15} className="text-accent-soft" /> : null}
               {saved ? 'Saved' : 'Save'}
             </button>
           </div>
@@ -219,9 +219,9 @@ function Toggle({ on, onClick, icon }: { on: boolean; onClick: () => void; icon:
   return (
     <button
       onClick={onClick}
-      className={cn('flex h-7 w-12 shrink-0 items-center rounded-full border px-0.5 transition-colors', on ? 'justify-end border-sky-400/50 bg-sky-400/20' : 'justify-start border-line bg-ink-900')}
+      className={cn('flex h-7 w-12 shrink-0 items-center rounded-full border px-0.5 transition-colors', on ? 'justify-end border-accent/50 bg-accent/20' : 'justify-start border-line bg-ink-900')}
     >
-      <span className={cn('grid h-6 w-6 place-items-center rounded-full', on ? 'bg-sky-400 text-ink-950' : 'bg-ink-700 text-white/50')}>{icon}</span>
+      <span className={cn('grid h-6 w-6 place-items-center rounded-full', on ? 'bg-accent text-white' : 'bg-ink-700 text-white/50')}>{icon}</span>
     </button>
   )
 }

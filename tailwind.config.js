@@ -9,20 +9,20 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // mission-deck chrome — cool blue-black steel
+        // nebula chrome — deep indigo glass on a blue-violet gradient
         ink: {
-          950: '#060709',
-          900: '#090b11',
-          850: '#0e1118',
-          800: '#12151d',
-          700: '#1b1f29',
-          600: '#262b37',
+          950: '#080814',
+          900: '#0c0c1c',
+          850: '#12122a',
+          800: '#181838',
+          700: '#22224a',
+          600: '#2e2e60',
         },
-        line: 'rgba(150,170,210,0.12)',
+        line: 'rgba(160,162,240,0.14)',
         steel: {
-          DEFAULT: '#8b95a7',
-          bright: '#e7ecf3',
-          dim: '#5b6472',
+          DEFAULT: '#9aa0c4',
+          bright: '#eef0fb',
+          dim: '#63678f',
         },
         // "paper" — where deliverables land
         paper: {
@@ -33,9 +33,9 @@ export default {
           line: 'rgba(38,34,27,0.14)',
         },
         accent: {
-          DEFAULT: '#6d7cff',
-          soft: '#8b96ff',
-          glow: 'rgba(109,124,255,0.35)',
+          DEFAULT: '#6d5bff',
+          soft: '#8f82ff',
+          glow: 'rgba(109,91,255,0.42)',
         },
         hack: {
           DEFAULT: '#ff7a45',

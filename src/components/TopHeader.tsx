@@ -45,7 +45,7 @@ export function TopHeader({ onMenu }: { onMenu: () => void }) {
           })()}
           {mode.name}
         </span>
-        <span className={cn('flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide', live ? 'border-emerald-500/40 text-emerald-300' : 'border-white/10 text-white/45')}>
+        <span className={cn('flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide', live ? 'border-accent/50 text-accent-soft' : 'border-white/10 text-white/45')}>
           {live ? <Zap size={11} /> : <Sparkles size={11} />}
           {live ? 'Live' : 'Offline'}
         </span>

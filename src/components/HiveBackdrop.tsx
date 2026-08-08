@@ -50,7 +50,7 @@ export function HiveBackdrop({ accent, active }: { accent: string; active: boole
       ))}
 
       {/* top vignette so the header reads cleanly */}
-      <div className="absolute inset-x-0 top-0 h-40" style={{ background: 'linear-gradient(#07080b, transparent)' }} />
+      <div className="absolute inset-x-0 top-0 h-40" style={{ background: 'linear-gradient(rgba(8,8,20,0.85), transparent)' }} />
     </div>
   )
 }

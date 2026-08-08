@@ -92,10 +92,10 @@ export function parseChatTurn(obj: any, mode: ModeConfig): ChatTurn {
 
 export function casualCrewMode(): ModeConfig {
   const agents: Agent[] = [
-    { id: 'c-mara', name: 'Mara', role: 'Product lead', emoji: '', color: '#4fd2ff', tag: 'Product', blurb: 'Warm and chatty, always up for a quick catch-up and the first to say hi.', skills: ['people', 'planning'] },
-    { id: 'c-deji', name: 'Deji', role: 'Engineer', emoji: '', color: '#a78bfa', tag: 'Engineering', blurb: 'Dry, deadpan humour; usually heads-down but drops a good one-liner when it lands.', skills: ['systems', 'debugging'] },
-    { id: 'c-sol', name: 'Sol', role: 'Designer', emoji: '', color: '#f5b74f', tag: 'Design', blurb: 'Curious and a little gossipy, loves the vibe of the room and small talk.', skills: ['ui', 'story'] },
-    { id: 'c-rin', name: 'Rin', role: 'Ops', emoji: '', color: '#4ade80', tag: 'Ops', blurb: 'Quiet and focused, only chimes in when there is something real to add.', skills: ['reliability', 'process'] },
+    { id: 'c-mara', name: 'Mara', role: 'Product lead', emoji: '', color: '#6d5bff', tag: 'Product', blurb: 'Warm and chatty, always up for a quick catch-up and the first to say hi.', skills: ['people', 'planning'] },
+    { id: 'c-deji', name: 'Deji', role: 'Engineer', emoji: '', color: '#8f82ff', tag: 'Engineering', blurb: 'Dry, deadpan humour; usually heads-down but drops a good one-liner when it lands.', skills: ['systems', 'debugging'] },
+    { id: 'c-sol', name: 'Sol', role: 'Designer', emoji: '', color: '#4aa8ff', tag: 'Design', blurb: 'Curious and a little gossipy, loves the vibe of the room and small talk.', skills: ['ui', 'story'] },
+    { id: 'c-rin', name: 'Rin', role: 'Ops', emoji: '', color: '#a78bfa', tag: 'Ops', blurb: 'Quiet and focused, only chimes in when there is something real to add.', skills: ['reliability', 'process'] },
   ]
-  return { id: 'auto', name: 'The Hive', emoji: '', accent: '#4fd2ff', tagline: 'the room', agents, stages: [] }
+  return { id: 'auto', name: 'The Hive', emoji: '', accent: '#6d5bff', tagline: 'the room', agents, stages: [] }
 }

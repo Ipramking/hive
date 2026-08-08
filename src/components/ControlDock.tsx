@@ -83,7 +83,7 @@ export function ControlDock() {
               </button>
             ))}
           </div>
-          <span className={cn('chip font-mono text-[10px] uppercase tracking-wide', live ? 'border-emerald-500/40 text-emerald-300' : 'border-white/10 text-white/45')}>
+          <span className={cn('chip font-mono text-[10px] uppercase tracking-wide', live ? 'border-accent/50 text-accent-soft' : 'border-white/10 text-white/45')}>
             {live ? <Zap size={11} /> : <Sparkles size={11} />}
             {live ? 'Live' : 'Offline'}
           </span>
@@ -96,7 +96,7 @@ export function ControlDock() {
             onClick={() => setWebAccess(!webAccess)}
             disabled={!live || running}
             title={live ? (webAccess ? 'Live web search on' : 'Live web search off') : 'Web search needs the live engine'}
-            className={cn('chip font-mono text-[10px] uppercase tracking-wide transition-colors disabled:opacity-40', live && webAccess ? 'border-sky-400/50 text-sky-300' : 'border-white/10 text-white/45 hover:text-white/70')}
+            className={cn('chip font-mono text-[10px] uppercase tracking-wide transition-colors disabled:opacity-40', live && webAccess ? 'border-accent/50 text-accent-soft' : 'border-white/10 text-white/45 hover:text-white/70')}
           >
             <Globe size={11} />
             {webAccess ? 'Web' : 'No web'}
