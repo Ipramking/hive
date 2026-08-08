@@ -7,6 +7,7 @@ import { callResilient, looseJson } from './engine/llmClient'
 import { brainForIndex, managerBrain } from './engine/brains'
 import { buildAgentPrompt, buildManagerPrompt, buildWhatsLeftPrompt, parseAgentTurn, parseManager } from './engine/floor'
 import { buildTeamPrompt, fallbackTeam, parseTeam } from './engine/autoTeam'
+import { buildIntentPrompt, parseIntent, buildChatDecisionPrompt, parseChatTurn, casualCrewMode } from './engine/chat'
 import { builtInModes } from './data/modes'
 import { DEFAULT_ORG } from './lib/storage'
 import { runToMarkdown } from './lib/exportRun'
@@ -87,6 +88,7 @@ interface HiveState {
   reset: () => void
   run: () => Promise<void>
   runFloor: () => Promise<void>
+  runChat: (text: string) => Promise<void>
   launch: () => Promise<void>
   currentRun: () => RunRecord
   exportMarkdown: () => string
@@ -290,10 +292,120 @@ export const useHive = create<HiveState>((set, get) => ({
   setRunStyle: (style) => set({ runStyle: style }),
 
   launch: async () => {
-    // Auto has no fixed stages — it always runs as a live floor.
-    // An attached image also needs the floor (only it does the vision scan).
-    if (get().runStyle === 'floor' || get().activeModeId === 'auto' || get().attachment) return get().runFloor()
+    if (get().runStatus === 'running') return
+    const text = get().task.trim()
+    const hasImage = !!get().attachment
+
+    // Images and resumed sessions are always real work.
+    if (hasImage || get().resumeContext) {
+      if (get().runStyle === 'floor' || get().activeModeId === 'auto' || hasImage) return get().runFloor()
+      return get().run()
+    }
+    if (!text) return
+
+    // Is the person trying to work, or just to talk? Let the room read the room.
+    const intentText = await callResilient(buildIntentPrompt(text), true, managerBrain())
+    if (get().runStatus === 'running') return // another launch already started
+    const intent = parseIntent(looseJson(intentText) ?? {}, text)
+    if (intent === 'chat') return get().runChat(text)
+
+    // Work: Auto (or Floor style) runs as a live floor; presets can relay.
+    if (get().runStyle === 'floor' || get().activeModeId === 'auto') return get().runFloor()
     return get().run()
+  },
+
+  // A real, casual exchange — no task, no deliverables. Each coworker decides in
+  // character whether to come out and chat, gossip, or stay heads-down (real LLM
+  // calls, one per coworker), then reacts to each other. Like a real office.
+  runChat: async (text) => {
+    if (get().runStatus === 'running') return
+    const token = get().runToken + 1
+    const org = get().org
+
+    // who's around: the picked mode's roster, an existing team, or a casual crew
+    let mode = get().activeMode()
+    const team = get().autoTeam
+    if (get().activeModeId === 'auto' && (!team || !team.agents.length)) {
+      mode = casualCrewMode()
+      set({ autoTeam: mode })
+    }
+    if (!mode.agents.length) {
+      mode = casualCrewMode()
+      set({ autoTeam: mode })
+    }
+
+    set({
+      runToken: token,
+      runStatus: 'running',
+      round: 0,
+      artifacts: [],
+      lastRanTask: text,
+      pendingUser: [],
+      agentStatus: Object.fromEntries(mode.agents.map((a) => [a.id, 'idle'])),
+      feed: push([], { kind: 'user', text }),
+    })
+
+    const transcript: string[] = [`Human: ${text}`]
+    const rounds = 2
+    for (let round = 1; round <= rounds; round++) {
+      if (get().runToken !== token) return
+
+      // fold in anything the human added mid-chat
+      const steer = get().pendingUser
+      if (steer.length) {
+        steer.forEach((m) => transcript.push(`Human: ${m}`))
+        set({ pendingUser: [] })
+      }
+
+      // everyone privately decides whether to chime in — in parallel, own brain
+      const results = await Promise.all(
+        mode.agents.map(async (agent, i) => {
+          const t = await callResilient(
+            buildChatDecisionPrompt({ agent, mode, userMsg: text, transcript: transcript.join('\n'), round, culture: org.culture }),
+            true,
+            brainForIndex(i),
+          )
+          if (get().runToken !== token) return null
+          return { agent, turn: parseChatTurn(looseJson(t) ?? {}, mode) }
+        }),
+      )
+      if (get().runToken !== token) return
+
+      let spoke = 0
+      for (const r of results) {
+        if (!r || !r.turn.respond) continue
+        spoke++
+        set((s) => ({
+          agentStatus: { ...s.agentStatus, [r.agent.id]: 'working' },
+          feed: push(s.feed, { kind: 'agent', agentId: r.agent.id, text: r.turn.say, to: r.turn.to ?? undefined }),
+        }))
+        transcript.push(`${r.agent.name}: ${r.turn.say}`)
+        await sleep(520)
+        if (get().runToken !== token) return
+        set((s) => ({ agentStatus: { ...s.agentStatus, [r.agent.id]: 'idle' } }))
+      }
+
+      // if the room went silent on the first pass, nudge one person to answer for real
+      if (spoke === 0 && round === 1) {
+        const agent = mode.agents[0]
+        const t = await callResilient(
+          buildChatDecisionPrompt({ agent, mode, userMsg: text, transcript: transcript.join('\n'), round, culture: org.culture, force: true }),
+          true,
+          brainForIndex(0),
+        )
+        if (get().runToken !== token) return
+        const turn = parseChatTurn(looseJson(t) ?? {}, mode)
+        if (turn.say) {
+          set((s) => ({ feed: push(s.feed, { kind: 'agent', agentId: agent.id, text: turn.say }) }))
+          transcript.push(`${agent.name}: ${turn.say}`)
+        }
+      }
+      await sleep(400)
+    }
+
+    if (get().runToken !== token) return
+    // chat leaves no deliverables and isn't saved to history
+    set({ runStatus: 'complete', round: 0 })
   },
 
   reset: () =>
