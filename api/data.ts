@@ -1,7 +1,7 @@
 /// <reference types="node" />
 // Per-user saved data (modes, history, settings) — one JSON blob per account.
-import { sql, ensureSchema } from './_lib/db'
-import { getSession } from './_lib/session'
+import { sql, ensureSchema } from './_lib/db.js'
+import { getSession } from './_lib/session.js'
 
 export default async function handler(req: any, res: any) {
   if (!process.env.DATABASE_URL) return res.status(503).json({ error: 'not configured' })

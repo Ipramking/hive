@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { clearSessionCookie } from '../_lib/session'
+import { clearSessionCookie } from '../_lib/session.js'
 
 export default async function handler(_req: any, res: any) {
   clearSessionCookie(res)

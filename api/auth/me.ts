@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { getSession } from '../_lib/session'
+import { getSession } from '../_lib/session.js'
 
 export default async function handler(req: any, res: any) {
   const session = await getSession(req)

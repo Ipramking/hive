@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import bcrypt from 'bcryptjs'
-import { sql, ensureSchema } from '../_lib/db'
-import { signSession, setSessionCookie } from '../_lib/session'
+import { sql, ensureSchema } from '../_lib/db.js'
+import { signSession, setSessionCookie } from '../_lib/session.js'
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
