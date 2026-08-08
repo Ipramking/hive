@@ -4,6 +4,7 @@ import { useHive } from '../store'
 import { roster } from '../engine/brains'
 import { alpha } from '../lib/color'
 import { cn } from '../lib/cn'
+import { AccountButton } from './AccountButton'
 
 export function TopHeader({ onMenu }: { onMenu: () => void }) {
   const mode = useHive((s) => s.activeMode())
@@ -51,6 +52,7 @@ export function TopHeader({ onMenu }: { onMenu: () => void }) {
         <span className="hidden items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-white/55 md:flex" title="Model brains working in parallel">
           <Cpu size={11} /> {brains}
         </span>
+        <AccountButton />
       </div>
     </header>
   )

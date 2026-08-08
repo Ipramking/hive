@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal, modeIconOf } from './icons'
+import { useRef, useState } from 'react'
+import { Play, RotateCcw, Loader2, Sparkles, Zap, Globe, Users, GitBranch, Cpu, SendHorizonal, ImagePlus, X, modeIconOf } from './icons'
 import { motion } from 'framer-motion'
 import { useHive } from '../store'
 import { Feed } from './Feed'
 import { roster } from '../engine/brains'
+import { fileToPickedImage } from '../lib/image'
 import { alpha } from '../lib/color'
 import { cn } from '../lib/cn'
 
@@ -27,12 +28,28 @@ export function ControlDock() {
   const engineName = useHive((s) => s.engineName())
   const webAccess = useHive((s) => s.webAccess)
   const setWebAccess = useHive((s) => s.setWebAccess)
+  const attachment = useHive((s) => s.attachment)
+  const setAttachment = useHive((s) => s.setAttachment)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [attaching, setAttaching] = useState(false)
   const running = runStatus === 'running'
   const live = engineName === 'gemini'
   const floor = runStyle === 'floor'
   const accent = mode.accent
   const brains = roster().length
   const examples = examplesById[mode.id] ?? [`Run "${mode.name}" on a real task`]
+
+  const pickImage = async (file: File | undefined) => {
+    if (!file || !file.type.startsWith('image/')) return
+    setAttaching(true)
+    try {
+      const picked = await fileToPickedImage(file)
+      setAttachment(picked)
+    } finally {
+      setAttaching(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
 
   return (
     <section className="card flex h-full min-h-0 flex-col overflow-hidden">
@@ -84,7 +101,30 @@ export function ControlDock() {
             <Globe size={11} />
             {webAccess ? 'Web' : 'No web'}
           </button>
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={running || attaching}
+            title="Attach an image for the room to read and research"
+            className={cn('chip font-mono text-[10px] uppercase tracking-wide transition-colors disabled:opacity-40', attachment ? 'border-[color:var(--accent)] text-white' : 'border-white/10 text-white/45 hover:text-white/70')}
+          >
+            {attaching ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
+            Image
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => pickImage(e.target.files?.[0])} />
         </div>
+
+        {attachment && (
+          <div className="inset mt-3 flex items-center gap-3 p-2">
+            <img src={attachment.dataUrl} alt={attachment.name} className="h-12 w-12 shrink-0 rounded-md object-cover" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-mono text-[11px] text-steel-bright">{attachment.name}</p>
+              <p className="font-mono text-[10px] text-steel-dim">the room will read this image, then work &amp; research on it</p>
+            </div>
+            <button onClick={() => setAttachment(null)} disabled={running} className="btn-icon shrink-0" title="Remove image">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         <div className="inset mt-3 flex items-start gap-2 px-3 py-2.5 transition-colors focus-within:border-[color:var(--accent)]">
           <span className="mt-px font-mono text-sm leading-6" style={{ color: accent }}>▸</span>
@@ -92,14 +132,14 @@ export function ControlDock() {
             value={task}
             onChange={(e) => setTask(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !running && task.trim()) {
+              if (e.key === 'Enter' && !e.shiftKey && !running && (task.trim() || attachment)) {
                 e.preventDefault()
                 launch()
               }
             }}
             disabled={running}
             rows={2}
-            placeholder="what should the room build?"
+            placeholder={attachment ? 'add a comment on the image (optional)…' : 'what should the room build?'}
             className="min-w-0 flex-1 resize-none bg-transparent text-sm leading-6 text-steel-bright outline-none placeholder:text-steel-dim disabled:opacity-60"
           />
         </div>
@@ -113,7 +153,7 @@ export function ControlDock() {
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={launch}
-            disabled={!task.trim()}
+            disabled={!task.trim() && !attachment}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-mono text-sm font-semibold uppercase tracking-wide text-black transition-all disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: accent, boxShadow: `0 0 26px ${alpha(accent, 0.45)}` }}
           >

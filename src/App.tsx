@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sidebar } from './components/Sidebar'
 import { TopHeader } from './components/TopHeader'
@@ -10,11 +10,16 @@ import { ModeEditor } from './components/ModeEditor'
 import { HistoryModal } from './components/HistoryModal'
 import { HiveBackdrop } from './components/HiveBackdrop'
 import { useHive } from './store'
+import { useAuth } from './lib/auth'
 import type { ModeConfig } from './types'
 
 export default function App() {
   const mode = useHive((s) => s.activeMode())
   const running = useHive((s) => s.runStatus === 'running')
+  const authInit = useAuth((s) => s.init)
+  useEffect(() => {
+    authInit()
+  }, [authInit])
   const [collapsed, setCollapsed] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
   const [view, setView] = useState<'floor' | 'settings'>('floor')

@@ -39,6 +39,10 @@ export {
   ListChecks,
   Circle,
   Eye,
+  ImagePlus,
+  LogIn,
+  LogOut,
+  UserRound,
 } from 'lucide-react'
 
 import {

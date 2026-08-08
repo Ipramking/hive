@@ -2,10 +2,13 @@ import { create } from 'zustand'
 import type { Artifact, EngineName, FeedMessage, ModeConfig, OrgSettings, RunRecord, RunStatus } from './types'
 import { getEngine, resolveEngineName } from './engine'
 import { searchWeb } from './engine/webSearch'
+import { scanImage } from './engine/vision'
 import { callResilient, looseJson } from './engine/llmClient'
 import { brainForIndex, managerBrain } from './engine/brains'
 import { buildAgentPrompt, buildManagerPrompt, buildWhatsLeftPrompt, parseAgentTurn, parseManager } from './engine/floor'
 import { buildTeamPrompt, fallbackTeam, parseTeam } from './engine/autoTeam'
+import { builtInModes } from './data/modes'
+import { DEFAULT_ORG } from './lib/storage'
 import { runToMarkdown } from './lib/exportRun'
 import {
   loadActiveModeId,
@@ -41,6 +44,8 @@ interface HiveState {
   org: OrgSettings
   /** user messages typed mid-session, consumed by the next round */
   pendingUser: string[]
+  /** an image the user attached to the next run (scanned by the vision model) */
+  attachment: { dataUrl: string; name: string } | null
 
   task: string
   runStyle: 'relay' | 'floor'
@@ -70,6 +75,7 @@ interface HiveState {
   setWebAccess: (on: boolean) => void
   setOrg: (patch: Partial<OrgSettings>) => void
   postUser: (text: string) => void
+  setAttachment: (a: { dataUrl: string; name: string } | null) => void
 
   // run actions
   setTask: (task: string) => void
@@ -80,6 +86,10 @@ interface HiveState {
   launch: () => Promise<void>
   currentRun: () => RunRecord
   exportMarkdown: () => string
+
+  // cloud sync (accounts)
+  snapshot: () => Record<string, unknown>
+  hydrate: (data: Record<string, unknown>) => void
 }
 
 const initialModes = loadModes()
@@ -96,6 +106,7 @@ export const useHive = create<HiveState>((set, get) => ({
   webAccess: loadWebAccess(),
   org: loadOrg(),
   pendingUser: [],
+  attachment: null,
 
   task: '',
   runStyle: 'floor',
@@ -138,6 +149,7 @@ export const useHive = create<HiveState>((set, get) => ({
       feed: [],
       artifacts: [],
       lastRanTask: '',
+      attachment: null,
       runToken: get().runToken + 1,
     })
   },
@@ -189,12 +201,15 @@ export const useHive = create<HiveState>((set, get) => ({
     }))
   },
 
+  setAttachment: (a) => set({ attachment: a }),
+
   setTask: (task) => set({ task }),
   setRunStyle: (style) => set({ runStyle: style }),
 
   launch: async () => {
-    // Auto has no fixed stages — it always runs as a live floor
-    if (get().runStyle === 'floor' || get().activeModeId === 'auto') return get().runFloor()
+    // Auto has no fixed stages — it always runs as a live floor.
+    // An attached image also needs the floor (only it does the vision scan).
+    if (get().runStyle === 'floor' || get().activeModeId === 'auto' || get().attachment) return get().runFloor()
     return get().run()
   },
 
@@ -207,6 +222,7 @@ export const useHive = create<HiveState>((set, get) => ({
       feed: [],
       artifacts: [],
       lastRanTask: '',
+      attachment: null,
       autoTeam: get().activeModeId === 'auto' ? null : get().autoTeam,
       runToken: get().runToken + 1,
     }),
@@ -330,28 +346,47 @@ export const useHive = create<HiveState>((set, get) => ({
   runFloor: async () => {
     if (get().runStatus === 'running') return
     const task = get().task.trim()
+    const attachment = get().attachment
     const token = get().runToken + 1
 
     const org = get().org
+    const headline = task || (attachment ? `the attached image${attachment.name ? ` (${attachment.name})` : ''}` : 'the task')
     set({
       runToken: token,
       runStatus: 'running',
       currentStageId: null,
       round: 0,
       artifacts: [],
-      lastRanTask: task,
+      lastRanTask: task || (attachment ? 'Uploaded image' : ''),
       pendingUser: [],
       agentStatus: {},
-      feed: push([], { kind: 'system', text: `Opening the floor on "${task || 'the task'}"` }),
+      feed: push([], { kind: 'system', text: `Opening the floor on "${headline}"` }),
     })
+
+    // 0. If the user attached an image, scan it first — the analysis becomes
+    // shared context for the whole room (they can't see the image themselves).
+    let effectiveTask = task
+    if (attachment) {
+      set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Scanning the attached image…' }) }))
+      const vision = await scanImage(attachment.dataUrl, task)
+      if (get().runToken !== token) return
+      if (vision) {
+        effectiveTask = task
+          ? `${task}\n\n--- Attached image · vision analysis ---\n${vision}`
+          : `Work from this uploaded image.\n\n--- Attached image · vision analysis ---\n${vision}`
+        set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Image scanned — analysis on the board' }) }))
+      } else {
+        set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Could not read the image — continuing without it' }) }))
+      }
+    }
 
     // 1. Assemble the team (Auto mode) or use the picked mode's roster
     let mode = get().activeMode()
     if (get().activeModeId === 'auto') {
       set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Assembling a team for this task…' }) }))
-      const teamText = await callResilient(buildTeamPrompt(task), true, managerBrain())
+      const teamText = await callResilient(buildTeamPrompt(effectiveTask), true, managerBrain())
       if (get().runToken !== token) return
-      mode = parseTeam(looseJson(teamText) ?? {}, task) ?? fallbackTeam(task)
+      mode = parseTeam(looseJson(teamText) ?? {}, effectiveTask) ?? fallbackTeam(effectiveTask)
       set({ autoTeam: mode })
       set((s) => ({
         agentStatus: Object.fromEntries(mode.agents.map((a) => [a.id, 'idle'])),
@@ -366,8 +401,8 @@ export const useHive = create<HiveState>((set, get) => ({
     // 2. Shared live web intel, pulled once for the whole room
     let intel = ''
     let intelSources: { title: string; uri: string }[] = []
-    if (get().webAccess && task) {
-      const web = await searchWeb(task)
+    if (get().webAccess && (task || effectiveTask)) {
+      const web = await searchWeb(task || effectiveTask)
       if (web.context) {
         intel = web.context
         intelSources = web.sources
@@ -400,7 +435,7 @@ export const useHive = create<HiveState>((set, get) => ({
       const mgrText = await callResilient(
         buildManagerPrompt({
           mode,
-          task,
+          task: effectiveTask,
           round,
           maxRounds,
           transcript: transcript.join('\n'),
@@ -442,7 +477,7 @@ export const useHive = create<HiveState>((set, get) => ({
           const agent = mode.agents.find((a) => a.id === agentId)
           if (!agent) return
           const text = await callResilient(
-            buildAgentPrompt({ mode, agent, task, instruction, transcript: transcript.join('\n'), intel, debate: org.debate, culture: org.culture, humanSteer }),
+            buildAgentPrompt({ mode, agent, task: effectiveTask, instruction, transcript: transcript.join('\n'), intel, debate: org.debate, culture: org.culture, humanSteer }),
             true,
             brainForIndex(agentIndex(agentId)),
           )
@@ -485,7 +520,7 @@ export const useHive = create<HiveState>((set, get) => ({
     const wlText = await callResilient(
       buildWhatsLeftPrompt({
         mode,
-        task,
+        task: effectiveTask,
         deliverables: get().artifacts.map((a) => ({ title: a.title, filename: a.filename, kind: a.kind })),
       }),
       true,
@@ -575,4 +610,34 @@ export const useHive = create<HiveState>((set, get) => ({
   },
 
   exportMarkdown: () => runToMarkdown(get().currentRun()),
+
+  // what we persist to a user's account (only durable data, never keys or run state)
+  snapshot: () => {
+    const s = get()
+    return {
+      modes: s.modes.filter((m) => !m.builtIn),
+      history: s.history,
+      org: s.org,
+      webAccess: s.webAccess,
+      activeModeId: s.activeModeId,
+    }
+  },
+
+  // replace local state with a user's saved cloud data (and cache it locally)
+  hydrate: (data) => {
+    const d = data as any
+    const custom = Array.isArray(d.modes) ? d.modes.filter((m: any) => m && !m.builtIn) : []
+    const modes = [...builtInModes, ...custom]
+    const history = Array.isArray(d.history) ? d.history : get().history
+    const org = { ...DEFAULT_ORG, ...(d.org || {}) }
+    const webAccess = typeof d.webAccess === 'boolean' ? d.webAccess : get().webAccess
+    const aid = d.activeModeId
+    const activeModeId = aid && (aid === 'auto' || modes.some((m) => m.id === aid)) ? aid : 'auto'
+    saveModes(modes)
+    saveHistory(history)
+    saveOrg(org)
+    saveWebAccess(webAccess)
+    saveActiveModeId(activeModeId)
+    set({ modes, history, org, webAccess, activeModeId, autoTeam: null, runStatus: 'draft', feed: [], artifacts: [], agentStatus: {} })
+  },
 }))
