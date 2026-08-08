@@ -9,6 +9,7 @@ import { SettingsPage } from './components/SettingsPage'
 import { ModeEditor } from './components/ModeEditor'
 import { HistoryModal } from './components/HistoryModal'
 import { HiveBackdrop } from './components/HiveBackdrop'
+import { Landing, Splash } from './components/Landing'
 import { useHive } from './store'
 import { useAuth } from './lib/auth'
 import { enter } from './lib/anim'
@@ -18,13 +19,20 @@ export default function App() {
   const mode = useHive((s) => s.activeMode())
   const running = useHive((s) => s.runStatus === 'running')
   const authInit = useAuth((s) => s.init)
+  const authEnabled = useAuth((s) => s.enabled)
+  const authStatus = useAuth((s) => s.status)
+  const authUser = useAuth((s) => s.user)
   useEffect(() => {
     authInit()
   }, [authInit])
-  // staggered reveal of the shell on first paint
+
+  // the app is behind the door: when accounts are on, you must be signed in
+  const showApp = !authEnabled || (authStatus === 'ready' && !!authUser)
+
+  // staggered reveal of the shell once it's actually on screen
   useEffect(() => {
-    enter('[data-enter]', { from: 90, y: 18 })
-  }, [])
+    if (showApp) enter('[data-enter]', { from: 90, y: 18 })
+  }, [showApp])
   const [collapsed, setCollapsed] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
   const [view, setView] = useState<'floor' | 'settings'>('floor')
@@ -49,6 +57,10 @@ export default function App() {
     onSettings: () => { closeNav(); setView('settings') },
     onHome: () => { closeNav(); setView('floor') },
   }
+
+  // gate: splash while we check the session, then the landing door until signed in
+  if (authEnabled && authStatus === 'loading') return <Splash />
+  if (authEnabled && !authUser) return <Landing />
 
   return (
     <div

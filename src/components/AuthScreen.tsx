@@ -4,10 +4,10 @@ import { useAuth } from '../lib/auth'
 import { useHive } from '../store'
 import { Hexagon, KeyRound, X, Loader2, Check } from './icons'
 
-export function AuthScreen({ onClose }: { onClose: () => void }) {
+export function AuthScreen({ onClose, initial = 'in' }: { onClose: () => void; initial?: 'in' | 'up' }) {
   const accent = useHive((s) => s.activeMode().accent)
   const { signIn, signUp, error, busy, clearError } = useAuth()
-  const [mode, setMode] = useState<'in' | 'up'>('in')
+  const [mode, setMode] = useState<'in' | 'up'>(initial)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
