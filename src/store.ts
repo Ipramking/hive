@@ -46,6 +46,8 @@ interface HiveState {
   pendingUser: string[]
   /** an image the user attached to the next run (scanned by the vision model) */
   attachment: { dataUrl: string; name: string } | null
+  /** when resuming a past run, the "already built" brief the next floor continues from */
+  resumeContext: string
 
   task: string
   runStyle: 'relay' | 'floor'
@@ -66,6 +68,8 @@ interface HiveState {
   // history actions
   deleteRun: (id: string) => void
   clearHistory: () => void
+  /** reload a saved run onto the board and set up the room to continue it */
+  resumeRun: (record: RunRecord) => void
 
   // mode + settings actions
   setActiveMode: (id: string) => void
@@ -107,6 +111,7 @@ export const useHive = create<HiveState>((set, get) => ({
   org: loadOrg(),
   pendingUser: [],
   attachment: null,
+  resumeContext: '',
 
   task: '',
   runStyle: 'floor',
@@ -130,6 +135,83 @@ export const useHive = create<HiveState>((set, get) => ({
     set({ history: [] })
   },
 
+  // Reload a saved run: rebuild its team, put its deliverables back on the board,
+  // and prime the room to keep building from there (see runFloor's resume branch).
+  resumeRun: (r) => {
+    // rebuild a roster from the saved deliverables so the room has its team back
+    const byMember = new Map<string, ModeConfig['agents'][number]>()
+    for (const a of r.artifacts) {
+      const name = a.agentName || 'Member'
+      if (!byMember.has(name)) {
+        byMember.set(name, {
+          id: `res-${byMember.size}`,
+          name,
+          role: a.agentRole || 'Contributor',
+          emoji: '',
+          color: r.accent,
+          blurb: '',
+          skills: [],
+          ...(a.agentRole ? { tag: a.agentRole } : {}),
+        })
+      }
+    }
+    const agents = byMember.size ? [...byMember.values()] : fallbackTeam(r.task).agents
+    const idOf = (name: string) => byMember.get(name || 'Member')?.id ?? agents[0].id
+
+    const team: ModeConfig = {
+      id: 'auto',
+      name: r.modeName || 'Resumed team',
+      emoji: r.modeEmoji || '',
+      accent: r.accent,
+      tagline: 'Resumed session',
+      agents,
+      stages: [],
+    }
+
+    // put deliverables back (drop the old handoff doc — a fresh one is written on continue)
+    const artifacts: Artifact[] = r.artifacts
+      .filter((a) => a.filename !== 'WHATS_LEFT.md')
+      .map((a) => ({
+        id: uid(),
+        stageId: 'resumed',
+        agentId: idOf(a.agentName),
+        title: a.title,
+        body: a.body,
+        ...(a.kind ? { kind: a.kind } : {}),
+        ...(a.filename ? { filename: a.filename } : {}),
+        ...(a.language ? { language: a.language } : {}),
+        ...(a.sources?.length ? { sources: a.sources } : {}),
+      }))
+
+    const built = r.artifacts
+      .filter((a) => a.filename !== 'WHATS_LEFT.md')
+      .map((a) => `- ${a.filename || a.title} (${a.kind || 'doc'}) — by ${a.agentName || 'team'}`)
+      .join('\n')
+    const resumeContext =
+      `You are PICKING UP an earlier session — not starting over. The team already shipped these; do NOT redo them. ` +
+      `Extend and refine them, wire them together, and add what is still missing:\n${built}`
+
+    saveActiveModeId('auto')
+    set({
+      activeModeId: 'auto',
+      autoTeam: team,
+      task: r.task,
+      lastRanTask: r.task,
+      artifacts,
+      resumeContext,
+      attachment: null,
+      runStatus: 'draft',
+      currentStageId: null,
+      round: 0,
+      agentStatus: Object.fromEntries(agents.map((a) => [a.id, 'done'])),
+      runToken: get().runToken + 1,
+      feed: push(
+        push([], { kind: 'system', text: `Resumed "${r.task || 'previous run'}" — ${artifacts.length} deliverable${artifacts.length === 1 ? '' : 's'} back on the board.` }),
+        { kind: 'system', text: 'Add an instruction (or just hit Execute) to keep building from here.' },
+      ),
+    })
+  },
+
   activeMode: () => {
     const s = get()
     if (s.activeModeId === 'auto' && s.autoTeam) return s.autoTeam
@@ -150,6 +232,7 @@ export const useHive = create<HiveState>((set, get) => ({
       artifacts: [],
       lastRanTask: '',
       attachment: null,
+      resumeContext: '',
       runToken: get().runToken + 1,
     })
   },
@@ -223,6 +306,7 @@ export const useHive = create<HiveState>((set, get) => ({
       artifacts: [],
       lastRanTask: '',
       attachment: null,
+      resumeContext: '',
       autoTeam: get().activeModeId === 'auto' ? null : get().autoTeam,
       runToken: get().runToken + 1,
     }),
@@ -347,6 +431,7 @@ export const useHive = create<HiveState>((set, get) => ({
     if (get().runStatus === 'running') return
     const task = get().task.trim()
     const attachment = get().attachment
+    const resuming = !!get().resumeContext
     const token = get().runToken + 1
 
     const org = get().org
@@ -356,11 +441,14 @@ export const useHive = create<HiveState>((set, get) => ({
       runStatus: 'running',
       currentStageId: null,
       round: 0,
-      artifacts: [],
-      lastRanTask: task || (attachment ? 'Uploaded image' : ''),
+      // on resume, keep the deliverables already on the board and build on top
+      artifacts: resuming ? get().artifacts : [],
+      lastRanTask: task || (attachment ? 'Uploaded image' : get().lastRanTask),
       pendingUser: [],
       agentStatus: {},
-      feed: push([], { kind: 'system', text: `Opening the floor on "${headline}"` }),
+      feed: resuming
+        ? push(get().feed, { kind: 'system', text: `Continuing on "${headline}"` })
+        : push([], { kind: 'system', text: `Opening the floor on "${headline}"` }),
     })
 
     // 0. If the user attached an image, scan it first — the analysis becomes
@@ -380,9 +468,16 @@ export const useHive = create<HiveState>((set, get) => ({
       }
     }
 
-    // 1. Assemble the team (Auto mode) or use the picked mode's roster
+    // On resume, the room continues from the earlier deliverables.
+    if (resuming) {
+      effectiveTask = `${get().resumeContext}\n\n--- The task ---\n${effectiveTask || get().lastRanTask}`
+      set({ resumeContext: '' })
+    }
+
+    // 1. Assemble the team (Auto mode) or use the picked mode's roster.
+    // A resumed run already has its team restored, so don't reassemble.
     let mode = get().activeMode()
-    if (get().activeModeId === 'auto') {
+    if (get().activeModeId === 'auto' && !resuming) {
       set((s) => ({ feed: push(s.feed, { kind: 'system', text: 'Assembling a team for this task…' }) }))
       const teamText = await callResilient(buildTeamPrompt(effectiveTask), true, managerBrain())
       if (get().runToken !== token) return

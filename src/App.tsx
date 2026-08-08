@@ -97,7 +97,14 @@ export default function App() {
         </main>
       </div>
 
-      <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <HistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onContinue={() => {
+          setView('floor')
+          setHistoryOpen(false)
+        }}
+      />
       <ModeEditor open={editorOpen} onClose={() => setEditorOpen(false)} editing={editing} />
     </div>
   )

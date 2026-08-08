@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Download, Trash2, Clock, ChevronDown, modeIconById } from './icons'
+import { Download, Trash2, Clock, ChevronDown, Play, modeIconById } from './icons'
 import { Modal } from './Modal'
 import { useHive } from '../store'
 import { downloadRun } from '../lib/exportRun'
@@ -18,7 +18,7 @@ function timeAgo(ts: number): string {
   return `${d}d ago`
 }
 
-export function HistoryModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function HistoryModal({ open, onClose, onContinue }: { open: boolean; onClose: () => void; onContinue?: () => void }) {
   const history = useHive((s) => s.history)
   const clearHistory = useHive((s) => s.clearHistory)
 
@@ -51,7 +51,7 @@ export function HistoryModal({ open, onClose }: { open: boolean; onClose: () => 
       ) : (
         <div className="space-y-2">
           {history.map((r) => (
-            <HistoryRow key={r.id} r={r} />
+            <HistoryRow key={r.id} r={r} onContinue={onContinue} />
           ))}
         </div>
       )}
@@ -59,9 +59,10 @@ export function HistoryModal({ open, onClose }: { open: boolean; onClose: () => 
   )
 }
 
-function HistoryRow({ r }: { r: RunRecord }) {
+function HistoryRow({ r, onContinue }: { r: RunRecord; onContinue?: () => void }) {
   const [open, setOpen] = useState(false)
   const deleteRun = useHive((s) => s.deleteRun)
+  const resumeRun = useHive((s) => s.resumeRun)
 
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-ink-800/40">
@@ -89,6 +90,17 @@ function HistoryRow({ r }: { r: RunRecord }) {
             </p>
           </div>
           <ChevronDown size={15} className={`shrink-0 text-white/40 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        <button
+          onClick={() => {
+            resumeRun(r)
+            onContinue?.()
+          }}
+          title="Continue this run — reload it and keep building"
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-wide transition-colors"
+          style={{ borderColor: alpha(r.accent, 0.5), color: r.accent }}
+        >
+          <Play size={12} /> Continue
         </button>
         <button
           onClick={() => downloadRun(r)}
